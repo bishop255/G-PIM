@@ -1,11 +1,14 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React from 'react';
+import { StyleSheet, View } from 'react-native';
+// Asegúrate de que la ruta sea correcta. 
+// Si SplashScreen.js está en la misma carpeta que App.js, usa './SplashScreen'
+import SplashScreen from './screens/SplashScreen'; 
 
 export default function App() {
   return (
     <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
+      {/* Solo renderizamos el Splash para verlo */}
+      <SplashScreen />
     </View>
   );
 }
@@ -13,8 +16,6 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#ffffff',
   },
 });
