@@ -1,21 +1,17 @@
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
-// Asegúrate de que la ruta sea correcta. 
-// Si SplashScreen.js está en la misma carpeta que App.js, usa './SplashScreen'
-import SplashScreen from './screens/SplashScreen'; 
+import React, { useState, useEffect } from 'react';
+import SplashScreen from './screens/SplashScreen';
+import InventoryScreen from './screens/InventoryScreen';
 
 export default function App() {
-  return (
-    <View style={styles.container}>
-      {/* Solo renderizamos el Splash para verlo */}
-      <SplashScreen />
-    </View>
-  );
-}
+  const [isLoaded, setIsLoaded] = useState(false);
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-});
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoaded(true);
+    }, 3500);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  return isLoaded ? <InventoryScreen /> : <SplashScreen />;
+}
