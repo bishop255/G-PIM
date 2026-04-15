@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import SplashScreen from './screens/SplashScreen';
-import InventoryScreen from './screens/InventoryScreen';
+import InventoryScreen from './screens/interfazCuidador/InventoryScreen';
 
 export default function App() {
   const [isLoaded, setIsLoaded] = useState(false);

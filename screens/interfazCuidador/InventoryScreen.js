@@ -9,9 +9,9 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useInventory } from '../hook/useInventory';
+import { useInventory } from '../../hook/useInventory';
 
-const PACIENTE_ID_DEMO = 'demo-paciente-001';
+const PACIENTE_ID_DEMO = 'demo-paciente-002';
 
 const InventoryScreen = () => {
   const [search, setSearch] = useState('');
