@@ -1,17 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import SplashScreen from './screens/SplashScreen';
+import UserTypeSelectionScreen from './screens/UserTypeSelectionScreen';
 import InventoryScreen from './screens/InventoryScreen';
 
 export default function App() {
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [screen, setScreen] = useState('splash');
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setIsLoaded(true);
+      setScreen('select');
     }, 3500);
 
     return () => clearTimeout(timer);
   }, []);
 
-  return isLoaded ? <InventoryScreen /> : <SplashScreen />;
+  if (screen === 'splash') {
+    return <SplashScreen />;
+  }
+
+  if (screen === 'select') {
+    return (
+      <UserTypeSelectionScreen
+        onSelect={(type) => {
+          console.log('Tipo seleccionado:', type);
+          setScreen('inventory');
+        }}
+      />
+    );
+  }
+
+  if (screen === 'inventory') {
+    return <InventoryScreen />;
+  }
+
+  return null;
 }
