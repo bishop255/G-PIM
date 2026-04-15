@@ -9,7 +9,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useInventory } from '../hook/useInventory';
+import { useInventory } from '../../hook/useInventory';
 
 const PACIENTE_ID_DEMO = 'demo-paciente-001';
 

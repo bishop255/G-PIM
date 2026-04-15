@@ -11,9 +11,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useInventory } from '../../hook/useInventory';
 
-const PACIENTE_ID_DEMO = 'demo-paciente-002';
+const PACIENTE_ID_DEMO = 'demo-paciente-001';
 
-const InventoryScreen = () => {
+const InventoryScreen = ({onAddPress}) => {
   const [search, setSearch] = useState('');
   const { medicines, loading } = useInventory(PACIENTE_ID_DEMO);
 
@@ -113,7 +113,7 @@ const InventoryScreen = () => {
         />
       )}
 
-      <TouchableOpacity style={styles.addButton}>
+      <TouchableOpacity style={styles.addButton} onPress={onAddPress}>
         <Ionicons name="add" size={24} color="#FFFFFF" />
         <Text style={styles.addButtonText}>Añadir medicamento</Text>
       </TouchableOpacity>
