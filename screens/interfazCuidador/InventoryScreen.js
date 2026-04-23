@@ -7,6 +7,7 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useInventory } from '../../hook/useInventory';
@@ -14,8 +15,49 @@ import { useInventory } from '../../hook/useInventory';
 const PACIENTE_ID_DEMO = 'demo-paciente-001';
 
 const InventoryScreen = ({onAddPress}) => {
+  
   const [search, setSearch] = useState('');
-  const { medicines, loading } = useInventory(PACIENTE_ID_DEMO);
+  const { medicines, loading, deleteMedicine } = useInventory(PACIENTE_ID_DEMO);
+
+  //Eliminar medicamento//
+
+  const confirmDelete = (id) => {
+    Alert.alert(
+      'Eliminar medicamento',
+      '¿Estás seguro?',
+      [
+        {text: 'Cancelar', style: 'cancel'},
+        {text: 'Eliminar', style: 'destructive',
+          onPress: async () => {
+            await deleteMedicine(id);
+            },
+          },
+        ]
+      );
+    };
+
+    const handleOptions = (item) => {
+      Alert.alert(
+        item.name,
+        '¿Qué deseas hacer?',
+        [
+          {text: 'Editar',
+            onPress: () => {
+              console.log('Editar', item.id);
+            },
+          },
+          {
+            text: 'Eliminar',
+            style: 'destructive' ,
+            onPress: () => confirmDelete(item.id),
+          },
+          {
+            text: 'Cancelar',
+            style: 'cancel',
+          },
+        ]
+      );
+    };
 
   const filteredMedicines = useMemo(() => {
     return medicines.filter((item) =>
@@ -59,7 +101,10 @@ const InventoryScreen = ({onAddPress}) => {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.editButton}>
+        <TouchableOpacity 
+          style={styles.editButton} 
+          onPress={() => handleOptions(item)}
+          >
           <Ionicons name="ellipsis-vertical" size={20} color="#636E72" />
         </TouchableOpacity>
       </View>

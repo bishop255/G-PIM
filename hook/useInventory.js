@@ -6,6 +6,7 @@ import {
   doc,
   updateDoc,
   addDoc,
+  deleteDoc,
   serverTimestamp,
 } from 'firebase/firestore';
 
@@ -55,6 +56,12 @@ export const useInventory = (pacienteId) => {
     }
   };
 
+
+
+  // MEDICAMENTO//
+
+
+  //Agregar Medicamento//
   const addMedicine = async (medicineData) => {
     try {
       const inventoryRef = collection(db, 'pacientes', pacienteId, 'inventario');
@@ -71,10 +78,39 @@ export const useInventory = (pacienteId) => {
     }
   };
 
+  //Actualizar Medicamento//
+
+  const updateMedicine = async (medicineId, updateData) => {
+    try {
+      const medicineRef = doc(db, 'pacientes', pacienteId, 'inventario', medicineId);
+
+      await updateDoc(medicineRef, {
+        ...updateData,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error('Error actualizando medicamento: ', error);
+    }
+  };
+
+  //Eliminar Medicamento//
+
+  const deleteMedicine = async (medicineId) => {
+    try {
+      const medicineRef = doc (db, 'pacientes', pacienteId, 'inventario', medicineId);
+      await deleteDoc(medicineRef);
+    } catch (error) {
+      console.error('Error al eliminar el medicamento: ', error)
+    }
+  }
+
+
   return {
     medicines,
     loading,
     updateMedicineStock,
     addMedicine,
+    updateMedicine,
+    deleteMedicine,
   };
 };
