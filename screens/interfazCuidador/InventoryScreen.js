@@ -8,67 +8,58 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  Image
+  Image,
 } from 'react-native';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Ionicons } from '@expo/vector-icons';
 import { useInventory } from '../../hook/useInventory';
 
 const PACIENTE_ID_DEMO = 'demo-paciente-001';
 
-const InventoryScreen = ({onAddPress, onEditPress }) => {
-  
+const InventoryScreen = ({ onAddPress, onEditPress }) => {
   const [search, setSearch] = useState('');
   const { medicines, loading, deleteMedicine } = useInventory(PACIENTE_ID_DEMO);
 
-  //Eliminar medicamento//
-
   const confirmDelete = (id) => {
-    Alert.alert(
-      'Eliminar medicamento',
-      '¿Estás seguro?',
-      [
-        {text: 'Cancelar', style: 'cancel'},
-        {text: 'Eliminar', style: 'destructive',
-          onPress: async () => {
-            await deleteMedicine(id);
-            },
-          },
-        ]
-      );
-    };
+    Alert.alert('Eliminar medicamento', '¿Estás seguro?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Eliminar',
+        style: 'destructive',
+        onPress: async () => {
+          await deleteMedicine(id);
+        },
+      },
+    ]);
+  };
 
-    const handleOptions = (item) => {
-      Alert.alert(
-        item.name,
-        '¿Qué deseas hacer?',
-        [
-          {text: 'Editar',
-            onPress: () => {
-              onEditPress(item);
-            },
-          },
-          {
-            text: 'Eliminar',
-            style: 'destructive' ,
-            onPress: () => confirmDelete(item.id),
-          },
-          {
-            text: 'Cancelar',
-            style: 'cancel',
-          },
-        ]
-      );
-    };
+  const handleOptions = (item) => {
+    Alert.alert(item.name, '¿Qué deseas hacer?', [
+      {
+        text: 'Editar',
+        onPress: () => onEditPress(item),
+      },
+      {
+        text: 'Eliminar',
+        style: 'destructive',
+        onPress: () => confirmDelete(item.id),
+      },
+      {
+        text: 'Cancelar',
+        style: 'cancel',
+      },
+    ]);
+  };
 
-    const getPriorityValue = (item) => {
+  const getPriorityValue = (item) => {
     const currentStock = Number(item.currentStock || 0);
     const minStock = Number(item.minStock || 0);
 
-    if (currentStock <= 0) return 1; // Sin stock
-    if (currentStock <= minStock) return 2; // Crítico
-    if (currentStock <= minStock * 1.5) return 3; // Bajo stock
+    if (currentStock <= 0) return 1;
+    if (currentStock <= minStock) return 2;
+    if (currentStock <= minStock * 1.5) return 3;
 
-    return 4; // Suficiente
+    return 4;
   };
 
   const filteredMedicines = useMemo(() => {
@@ -79,30 +70,69 @@ const InventoryScreen = ({onAddPress, onEditPress }) => {
       .sort((a, b) => getPriorityValue(a) - getPriorityValue(b));
   }, [medicines, search]);
 
-const getRemainingDays = (item) => {
-  const currentStock = Number(item.currentStock || 0);
-  const dailyDose = Number(item.dailyDose || 0);
+  const getRemainingDays = (item) => {
+    const currentStock = Number(item.currentStock || 0);
+    const dailyDose = Number(item.dailyDose || 0);
 
-  if (currentStock <= 0) return 0;
-  if (dailyDose <= 0) return null;
+    if (currentStock <= 0) return 0;
+    if (dailyDose <= 0) return null;
 
-  return Math.floor(currentStock / dailyDose);
-};
+    return Math.floor(currentStock / dailyDose);
+  };
 
-const getStockStatus = (item) => {
-  const currentStock = Number(item.currentStock || 0);
-  const minStock = Number(item.minStock || 0);
+  const getStockStatus = (item) => {
+    const currentStock = Number(item.currentStock || 0);
+    const minStock = Number(item.minStock || 0);
 
-  if (currentStock <= 0) {
-    return { label: 'Sin stock', color: '#E74C3C', background: '#FDECEC' };
-  }
+    if (currentStock <= 0) {
+      return {
+        label: 'Sin stock',
+        color: '#E74C3C',
+        background: '#FDECEC',
+        iconColor: '#E74C3C',
+      };
+    }
 
-  if (currentStock <= minStock) {
-    return { label: 'Crítico', color: '#F39C12', background: '#FFF4E5' };
-  }
+    if (currentStock <= minStock) {
+      return {
+        label: 'Crítico',
+        color: '#F39C12',
+        background: '#FFF4E5',
+        iconColor: '#F39C12',
+      };
+    }
 
-  return { label: 'Suficiente', color: '#27AE60', background: '#EAF8EE' };
-};
+    if (currentStock <= minStock * 1.5) {
+      return {
+        label: 'Bajo stock',
+        color: '#D68910',
+        background: '#FFF8E1',
+        iconColor: '#D68910',
+      };
+    }
+
+    return {
+      label: 'Suficiente',
+      color: '#27AE60',
+      background: '#EAF8EE',
+      iconColor: '#27AE60',
+    };
+  };
+
+  const getCategoryIcon = (category) => {
+    switch (category) {
+      case 'Tableta':
+        return 'pill';
+      case 'Jarabe':
+        return 'bottle-tonic';
+      case 'Inyección':
+        return 'needle';
+      case 'Otro':
+        return 'medical-bag';
+      default:
+        return 'pill';
+    }
+  };
 
   const renderItem = ({ item }) => {
     const status = getStockStatus(item);
@@ -111,33 +141,39 @@ const getStockStatus = (item) => {
     return (
       <View style={[styles.card, { backgroundColor: status.background }]}>
         <View style={styles.cardLeft}>
-          <View style={styles.iconBox}>
-            <Ionicons name="medkit-outline" size={24} color="#4F5D75" />
+          <View style={[styles.iconBox, { borderColor: status.iconColor }]}>
+            <MaterialCommunityIcons
+              name={getCategoryIcon(item.category)}
+              size={34}
+              color={status.iconColor}
+            />
           </View>
 
           <View style={styles.textBox}>
             <Text style={styles.productName}>{item.name}</Text>
+
             <Text style={styles.productStock}>
               Stock: {item.currentStock ?? 0} unidades
             </Text>
-            <Text style = {styles.remainingDays}>
+
+            <Text style={styles.remainingDays}>
               {remainingDays === null
-              ? 'Dosis diaria no definida'
-              : remainingDays === 1
-              ? 'Quedan 1 dia de stock'
-              : `Quedan ${remainingDays} días de stock`}
+                ? 'Dosis diaria no definida'
+                : remainingDays === 1
+                ? 'Queda 1 día de stock'
+                : `Quedan ${remainingDays} días de stock`}
             </Text>
-              
+
             <Text style={[styles.statusText, { color: status.color }]}>
               {status.label}
             </Text>
           </View>
         </View>
 
-        <TouchableOpacity 
-          style={styles.editButton} 
+        <TouchableOpacity
+          style={styles.editButton}
           onPress={() => handleOptions(item)}
-          >
+        >
           <Ionicons name="ellipsis-vertical" size={20} color="#636E72" />
         </TouchableOpacity>
       </View>
@@ -151,14 +187,14 @@ const getStockStatus = (item) => {
           <Ionicons name="menu" size={24} color="#2D3436" />
         </TouchableOpacity>
 
-          <View style={styles.logoContainer}>
-            <Image
-              source={require('../../assets/logo.png')}
-              style={styles.logoIcon}
-              resizeMode="contain"
-            />
-            <Text style={styles.logoText}>G-PIM</Text>
-          </View>
+        <View style={styles.logoContainer}>
+          <Image
+            source={require('../../assets/logo.png')}
+            style={styles.logoIcon}
+            resizeMode="contain"
+          />
+          <Text style={styles.logoText}>G-PIM</Text>
+        </View>
 
         <TouchableOpacity>
           <Ionicons name="notifications-outline" size={24} color="#2D3436" />
@@ -168,7 +204,12 @@ const getStockStatus = (item) => {
       <Text style={styles.header}>Inventario Médico</Text>
 
       <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color="#B2BEC3" style={styles.searchIcon} />
+        <Ionicons
+          name="search"
+          size={20}
+          color="#B2BEC3"
+          style={styles.searchIcon}
+        />
         <TextInput
           placeholder="Buscar medicamento..."
           style={styles.searchInput}
@@ -268,13 +309,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   iconBox: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
-    backgroundColor: '#FFFFFFAA',
+    width: 64,
+    height: 64,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 14,
+    borderWidth: 2,
   },
   textBox: {
     flex: 1,
