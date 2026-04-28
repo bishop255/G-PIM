@@ -4,6 +4,8 @@ import UserTypeSelectionScreen from './screens/interfazAdultoMayor/UserTypeSelec
 import InventoryScreen from './screens/interfazCuidador/InventoryScreen';
 import AddMedicineScreen from './screens/interfazCuidador/AddMedicineScreen';
 import EditMedicineScreen from './screens/interfazCuidador/EditMedicineScreen';
+import AlertsScreen from './screens/interfazCuidador/AlertsScreen';
+import OffersScreen from './screens/interfazCuidador/OffersScreen';
 
 export default function App() {
   const [screen, setScreen] = useState('splash');
@@ -11,11 +13,11 @@ export default function App() {
 
 
   useEffect(() => {
+
     const timer = setTimeout(() => {
       setScreen('select');
     }, 3500);
 
-    
     return () => clearTimeout(timer);
   }, []);
 
@@ -45,6 +47,8 @@ export default function App() {
           setSelectedMedicine(medicine);
           setScreen('editMedicine');
         }}
+        onAlertsPress={() => setScreen('alerts')}
+        onOffersPress={() => setScreen('offers')}
       />
     );
   }
@@ -73,7 +77,25 @@ export default function App() {
     )
   }
 
+  // Alertas
+  if (screen === 'alerts') {
+    return (
+      <AlertsScreen
+        onBack={() => setScreen('inventory')}
+        onGoInventory={() => setScreen('inventory')}
+      />
+    );
+  }
 
+  // Ofertas
+  if (screen === 'offers') {
+    return (
+      <OffersScreen
+      onBack={() => setScreen('inventory')}
+      onGoInventory={() => setScreen('inventory')}
+       />
+    );
+  }
 
   return null;
 }

@@ -16,7 +16,7 @@ import { useInventory } from '../../hook/useInventory';
 
 const PACIENTE_ID_DEMO = 'demo-paciente-001';
 
-const InventoryScreen = ({ onAddPress, onEditPress }) => {
+const InventoryScreen = ({ onAddPress, onEditPress, onAlertsPress, onOffersPress }) => {
   const [search, setSearch] = useState('');
   const { medicines, loading, deleteMedicine } = useInventory(PACIENTE_ID_DEMO);
 
@@ -243,6 +243,28 @@ const InventoryScreen = ({ onAddPress, onEditPress }) => {
         <Ionicons name="add" size={24} color="#FFFFFF" />
         <Text style={styles.addButtonText}>Añadir medicamento</Text>
       </TouchableOpacity>
+
+      <View style={styles.bottomNav}>
+        <TouchableOpacity style={styles.navItem}>
+          <Ionicons name="home" size={24} color="#42B65A" />
+          <Text style={[styles.navText, { color: '#42B65A' }]}>Inicio</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.navItem} onPress={onAlertsPress}>
+          <Ionicons name="alert-circle-outline" size={24} color="#E74C3C" />
+          <Text style={[styles.navText, { color: '#E74C3C' }]}>Alertas</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.navItem} onPress={onOffersPress}>
+          <Ionicons name="cart-outline" size={24} color="#F39C12" />
+          <Text style={[styles.navText, { color: '#F39C12' }]}>Ofertas</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.navItem}>
+          <Ionicons name="person-outline" size={24} color="#2D3436" />
+          <Text style={styles.navText}>Perfil</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -258,6 +280,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logoIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    marginRight: 6,
   },
   logoText: {
     fontSize: 20,
@@ -293,7 +325,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   listContent: {
-    paddingBottom: 110,
+    paddingBottom: 185,
   },
   card: {
     borderRadius: 18,
@@ -331,6 +363,12 @@ const styles = StyleSheet.create({
     color: '#636E72',
     marginTop: 4,
   },
+  remainingDays: {
+    fontSize: 14,
+    color: '#4F5D75',
+    marginTop: 4,
+    fontWeight: '600',
+  },
   statusText: {
     fontSize: 13,
     fontWeight: '700',
@@ -344,7 +382,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 20,
     right: 20,
-    bottom: 25,
+    bottom: 90,
     backgroundColor: '#42B65A',
     borderRadius: 16,
     paddingVertical: 15,
@@ -358,6 +396,34 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     marginLeft: 8,
+  },
+  bottomNav: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 75,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    elevation: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+  },
+  navItem: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  navText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#2D3436',
+    marginTop: 3,
   },
   centerContent: {
     alignItems: 'center',
@@ -373,22 +439,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#636E72',
   },
-  remainingDays: {
-  fontSize: 14,
-  color: '#4F5D75',
-  marginTop: 4,
-  fontWeight: '600',
-},
-logoContainer: {
-  flexDirection: 'row',
-  alignItems: 'center',
-},
-
-logoIcon: {
-  width: 32,
-  height: 32,
-  borderRadius: 8,
-},
 });
 
 export default InventoryScreen;
