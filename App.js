@@ -4,16 +4,26 @@ import UserTypeSelectionScreen from './screens/interfazAdultoMayor/UserTypeSelec
 import InventoryScreen from './screens/interfazCuidador/InventoryScreen';
 import AddMedicineScreen from './screens/interfazCuidador/AddMedicineScreen';
 import EditMedicineScreen from './screens/interfazCuidador/EditMedicineScreen';
+<<<<<<< HEAD
 import PatientFormScreen from './screens/interfazAdultoMayor/PatientFormScreen';
+=======
+import AlertsScreen from './screens/interfazCuidador/AlertsScreen';
+import OffersScreen from './screens/interfazCuidador/OffersScreen';
+>>>>>>> 19375000cdd1b470a640cd7dff88c90c94e6c7da
 
 export default function App() {
   const [screen, setScreen] = useState('splash');
   const [selectedMedicine, setSelectedMedicine] = useState(null);
 
   useEffect(() => {
+
     const timer = setTimeout(() => {
       setScreen('select');
     }, 3500);
+<<<<<<< HEAD
+=======
+
+>>>>>>> 19375000cdd1b470a640cd7dff88c90c94e6c7da
     return () => clearTimeout(timer);
   }, []);
 
@@ -54,6 +64,8 @@ export default function App() {
           setSelectedMedicine(medicine);
           setScreen('editMedicine');
         }}
+        onAlertsPress={() => setScreen('alerts')}
+        onOffersPress={() => setScreen('offers')}
       />
     );
   }
@@ -82,5 +94,28 @@ export default function App() {
     );
   }
 
+<<<<<<< HEAD
+=======
+  // Alertas
+  if (screen === 'alerts') {
+    return (
+      <AlertsScreen
+        onBack={() => setScreen('inventory')}
+        onGoInventory={() => setScreen('inventory')}
+      />
+    );
+  }
+
+  // Ofertas
+  if (screen === 'offers') {
+    return (
+      <OffersScreen
+      onBack={() => setScreen('inventory')}
+      onGoInventory={() => setScreen('inventory')}
+       />
+    );
+  }
+
+>>>>>>> 19375000cdd1b470a640cd7dff88c90c94e6c7da
   return null;
 }
