@@ -6,51 +6,74 @@ import {
     TouchableOpacity,
     Image,
     StatusBar,
+    Alert,
+    BackHandler
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 
 const UserTypeSelectionScreen = ({ onSelect }) => {
-    const handleSelect = (type) => {
-        console.log('Tipo seleccionado:', type);
-        onSelect(type);
+
+    const handleCloseApp = () => {
+        Alert.alert(
+            "Cerrar aplicación",
+            "¿Estás seguro que deseas cerrar la app?",
+            [
+                { text: "Cancelar", style: "cancel" },
+                { text: "Sí, cerrar", onPress: () => BackHandler.exitApp() },
+            ],
+            { cancelable: false }
+        );
     };
 
     return (
         <View style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#F2F2F2" />
+            <StatusBar barStyle="dark-content" backgroundColor="#F2F2F2" />
 
-        <View style={styles.logoContainer}>
-            <Image
-            source={require('../../assets/logo.png')}
-            style={styles.logo}
-            resizeMode="contain"
-            />
-        </View>
+            {/* LOGO */}
+            <View style={styles.logoContainer}>
+                <Image
+                    source={require('../../assets/logo.png')}
+                    style={styles.logo}
+                    resizeMode="contain"
+                />
+            </View>
 
-        <Text style={styles.title}>G-PIM</Text>
-        <Text style={styles.subtitle}>Seleccione la interfaz</Text>
+            <Text style={styles.title}>G-PIM</Text>
+            <Text style={styles.subtitle}>Seleccione la interfaz</Text>
 
-        <View style={styles.optionsContainer}>
-            <TouchableOpacity
-            style={styles.optionCard}
-            onPress={() => handleSelect('admin')}
+            <View style={styles.optionsContainer}>
+
+                {/* FAMILIAR */}
+                <TouchableOpacity
+                    style={styles.optionCard}
+                    onPress={() => onSelect('admin')}
+                >
+                    <Image
+                        source={require('../../assets/familia-adoptiva.png')}
+                        style={styles.iconImage}
+                    />
+                    <Text style={styles.optionText}>Familiar</Text>
+                </TouchableOpacity>
+
+                {/* PACIENTE */}
+                <TouchableOpacity
+                    style={styles.optionCard}
+                    onPress={() => onSelect('patient')}
+                >
+                    <Image
+                        source={require('../../assets/paciente.png')}
+                        style={styles.iconImage}
+                    />
+                    <Text style={styles.optionText}>Paciente</Text>
+                </TouchableOpacity>
+
+            </View>
+
+            <TouchableOpacity 
+                style={styles.closeButton} 
+                onPress={handleCloseApp}
             >
-            <Ionicons name="people-outline" size={40} color="#0984E3" />
-            <Text style={styles.optionText}>Familiar</Text>
+                <Text style={styles.closeText}>Cerrar</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity
-            style={styles.optionCard}
-            onPress={() => handleSelect('patient')}
-            >
-            <Ionicons name="accessibility-outline" size={40} color="#6C5CE7" />
-            <Text style={styles.optionText}>Adulto mayor</Text>
-            </TouchableOpacity>
-        </View>
-
-        <TouchableOpacity style={styles.closeButton}>
-            <Text style={styles.closeText}>Cerrar</Text>
-        </TouchableOpacity>
         </View>
     );
 };
@@ -62,65 +85,82 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#F2F2F2',
         alignItems: 'center',
-        paddingTop: 60,
+        paddingTop: 80,
     },
 
     logoContainer: {
         backgroundColor: '#FFFFFF',
-        borderRadius: 20,
-        padding: 20,
-        elevation: 3,
+        borderRadius: 25,
+        padding: 25,
+        elevation: 4,
     },
 
     logo: {
-        width: 120,
-        height: 120,
+        width: 160,
+        height: 160,
     },
 
     title: {
-        fontSize: 28,
+        fontSize: 34,
         fontWeight: 'bold',
-        marginTop: 20,
+        marginTop: 25,
         color: '#000',
     },
 
     subtitle: {
-        fontSize: 16,
+        fontSize: 18,
         color: '#555',
-        marginBottom: 30,
+        marginBottom: 20,
     },
 
     optionsContainer: {
         flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 20,
+        width: '100%',
+        paddingHorizontal: 20,
         gap: 20,
     },
 
     optionCard: {
-        backgroundColor: '#EAEAEA',
-        padding: 20,
-        borderRadius: 15,
+        backgroundColor: '#FFFFFF',
+        paddingVertical: 45,
+        paddingHorizontal: 20,
+        borderRadius: 25,
         alignItems: 'center',
-        width: 140,
+        width: '42%',
+        elevation: 6,
+    },
+
+    iconImage: {
+        width: 90,
+        height: 90,
+        resizeMode: 'contain',
+        marginBottom: 10,
     },
 
     optionText: {
-        marginTop: 10,
-        fontSize: 16,
-        fontWeight: '600',
+        marginTop: 18,
+        fontSize: 22,
+        fontWeight: '700',
+        textAlign: 'center',
     },
 
     closeButton: {
         position: 'absolute',
-        bottom: 40,
+        bottom: 80,
         backgroundColor: '#FF3B30',
-        paddingVertical: 15,
-        paddingHorizontal: 80,
-        borderRadius: 25,
+        paddingVertical: 22,
+        borderRadius: 35,
+        width: '85%',
+        alignItems: 'center',
+        elevation: 6,
     },
 
     closeText: {
         color: '#FFFFFF',
-        fontSize: 16,
+        fontSize: 20,
         fontWeight: 'bold',
     },
 });

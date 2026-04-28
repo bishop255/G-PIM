@@ -4,44 +4,53 @@ import UserTypeSelectionScreen from './screens/interfazAdultoMayor/UserTypeSelec
 import InventoryScreen from './screens/interfazCuidador/InventoryScreen';
 import AddMedicineScreen from './screens/interfazCuidador/AddMedicineScreen';
 import EditMedicineScreen from './screens/interfazCuidador/EditMedicineScreen';
+import PatientFormScreen from './screens/interfazAdultoMayor/PatientFormScreen';
 
 export default function App() {
   const [screen, setScreen] = useState('splash');
-  const [selectedMedicine, setSelectedMedicine] = useState(null)
-
+  const [selectedMedicine, setSelectedMedicine] = useState(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setScreen('select');
     }, 3500);
-
-    
     return () => clearTimeout(timer);
   }, []);
 
-  //  Splash
-  if (screen === 'splash') {
-    return <SplashScreen />;
-  }
+  // Splash
+  if (screen === 'splash') return <SplashScreen />;
 
-  //  Selección de usuario
+  // Selección
   if (screen === 'select') {
     return (
       <UserTypeSelectionScreen
         onSelect={(type) => {
-          console.log('Tipo seleccionado:', type);
-          setScreen('inventory');
+          if (type === 'admin') {
+            setScreen('patientForm'); // Familiar → formulario
+          } else {
+            setScreen('inventory'); // Paciente → directo
+          }
         }}
       />
     );
   }
 
-  //  Inventario
+  // FORMULARIO PACIENTE
+  if (screen === 'patientForm') {
+    return (
+      <PatientFormScreen
+        onSaved={() => setScreen('inventory')}
+        onCancel={() => setScreen('select')}
+      />
+    );
+  }
+
+  // Inventario
   if (screen === 'inventory') {
     return (
       <InventoryScreen
         onAddPress={() => setScreen('addMedicine')}
-        onEditPress = {(medicine) => {
+        onEditPress={(medicine) => {
           setSelectedMedicine(medicine);
           setScreen('editMedicine');
         }}
@@ -49,7 +58,7 @@ export default function App() {
     );
   }
 
-  //  Añadir medicamento
+  // Añadir
   if (screen === 'addMedicine') {
     return (
       <AddMedicineScreen
@@ -59,21 +68,19 @@ export default function App() {
     );
   }
 
-  // Editar Medicamento
+  // Editar
   if (screen === 'editMedicine') {
     return (
       <EditMedicineScreen
-      medicine = {selectedMedicine}
-      onCancel = {() => setScreen('inventory')}
-      onSaved = {() => {
-        setSelectedMedicine(null);
-        setScreen('inventory');
-      }}
+        medicine={selectedMedicine}
+        onCancel={() => setScreen('inventory')}
+        onSaved={() => {
+          setSelectedMedicine(null);
+          setScreen('inventory');
+        }}
       />
-    )
+    );
   }
-
-
 
   return null;
 }
