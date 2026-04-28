@@ -3,24 +3,28 @@ import SplashScreen from './screens/SplashScreen';
 import UserTypeSelectionScreen from './screens/interfazAdultoMayor/UserTypeSelectionScreen';
 import InventoryScreen from './screens/interfazCuidador/InventoryScreen';
 import AddMedicineScreen from './screens/interfazCuidador/AddMedicineScreen';
+import EditMedicineScreen from './screens/interfazCuidador/EditMedicineScreen';
 
 export default function App() {
   const [screen, setScreen] = useState('splash');
+  const [selectedMedicine, setSelectedMedicine] = useState(null)
+
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setScreen('select');
     }, 3500);
 
+    
     return () => clearTimeout(timer);
   }, []);
 
-  // 🟢 Splash
+  //  Splash
   if (screen === 'splash') {
     return <SplashScreen />;
   }
 
-  // 🟢 Selección de usuario
+  //  Selección de usuario
   if (screen === 'select') {
     return (
       <UserTypeSelectionScreen
@@ -32,16 +36,20 @@ export default function App() {
     );
   }
 
-  // 🟢 Inventario
+  //  Inventario
   if (screen === 'inventory') {
     return (
       <InventoryScreen
         onAddPress={() => setScreen('addMedicine')}
+        onEditPress = {(medicine) => {
+          setSelectedMedicine(medicine);
+          setScreen('editMedicine');
+        }}
       />
     );
   }
 
-  // 🟢 Añadir medicamento
+  //  Añadir medicamento
   if (screen === 'addMedicine') {
     return (
       <AddMedicineScreen
@@ -50,6 +58,22 @@ export default function App() {
       />
     );
   }
+
+  // Editar Medicamento
+  if (screen === 'editMedicine') {
+    return (
+      <EditMedicineScreen
+      medicine = {selectedMedicine}
+      onCancel = {() => setScreen('inventory')}
+      onSaved = {() => {
+        setSelectedMedicine(null);
+        setScreen('inventory');
+      }}
+      />
+    )
+  }
+
+
 
   return null;
 }

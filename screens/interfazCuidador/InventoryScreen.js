@@ -8,13 +8,14 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useInventory } from '../../hook/useInventory';
 
 const PACIENTE_ID_DEMO = 'demo-paciente-001';
 
-const InventoryScreen = ({onAddPress}) => {
+const InventoryScreen = ({onAddPress, onEditPress }) => {
   
   const [search, setSearch] = useState('');
   const { medicines, loading, deleteMedicine } = useInventory(PACIENTE_ID_DEMO);
@@ -43,7 +44,7 @@ const InventoryScreen = ({onAddPress}) => {
         [
           {text: 'Editar',
             onPress: () => {
-              console.log('Editar', item.id);
+              onEditPress(item);
             },
           },
           {
@@ -59,29 +60,53 @@ const InventoryScreen = ({onAddPress}) => {
       );
     };
 
-  const filteredMedicines = useMemo(() => {
-    return medicines.filter((item) =>
-      item.name?.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [medicines, search]);
-
-  const getStockStatus = (item) => {
+    const getPriorityValue = (item) => {
     const currentStock = Number(item.currentStock || 0);
     const minStock = Number(item.minStock || 0);
 
-    if (currentStock <= 0) {
-      return { label: 'Sin stock', color: '#E74C3C', background: '#FDECEC' };
-    }
+    if (currentStock <= 0) return 1; // Sin stock
+    if (currentStock <= minStock) return 2; // Crítico
+    if (currentStock <= minStock * 1.5) return 3; // Bajo stock
 
-    if (currentStock <= minStock) {
-      return { label: 'Crítico', color: '#F39C12', background: '#FFF4E5' };
-    }
-
-    return { label: 'Suficiente', color: '#27AE60', background: '#EAF8EE' };
+    return 4; // Suficiente
   };
+
+  const filteredMedicines = useMemo(() => {
+    return medicines
+      .filter((item) =>
+        item.name?.toLowerCase().includes(search.toLowerCase())
+      )
+      .sort((a, b) => getPriorityValue(a) - getPriorityValue(b));
+  }, [medicines, search]);
+
+const getRemainingDays = (item) => {
+  const currentStock = Number(item.currentStock || 0);
+  const dailyDose = Number(item.dailyDose || 0);
+
+  if (currentStock <= 0) return 0;
+  if (dailyDose <= 0) return null;
+
+  return Math.floor(currentStock / dailyDose);
+};
+
+const getStockStatus = (item) => {
+  const currentStock = Number(item.currentStock || 0);
+  const minStock = Number(item.minStock || 0);
+
+  if (currentStock <= 0) {
+    return { label: 'Sin stock', color: '#E74C3C', background: '#FDECEC' };
+  }
+
+  if (currentStock <= minStock) {
+    return { label: 'Crítico', color: '#F39C12', background: '#FFF4E5' };
+  }
+
+  return { label: 'Suficiente', color: '#27AE60', background: '#EAF8EE' };
+};
 
   const renderItem = ({ item }) => {
     const status = getStockStatus(item);
+    const remainingDays = getRemainingDays(item);
 
     return (
       <View style={[styles.card, { backgroundColor: status.background }]}>
@@ -95,6 +120,14 @@ const InventoryScreen = ({onAddPress}) => {
             <Text style={styles.productStock}>
               Stock: {item.currentStock ?? 0} unidades
             </Text>
+            <Text style = {styles.remainingDays}>
+              {remainingDays === null
+              ? 'Dosis diaria no definida'
+              : remainingDays === 1
+              ? 'Quedan 1 dia de stock'
+              : `Quedan ${remainingDays} días de stock`}
+            </Text>
+              
             <Text style={[styles.statusText, { color: status.color }]}>
               {status.label}
             </Text>
@@ -118,7 +151,14 @@ const InventoryScreen = ({onAddPress}) => {
           <Ionicons name="menu" size={24} color="#2D3436" />
         </TouchableOpacity>
 
-        <Text style={styles.logoText}>G-PIM</Text>
+          <View style={styles.logoContainer}>
+            <Image
+              source={require('../../assets/logo.png')}
+              style={styles.logoIcon}
+              resizeMode="contain"
+            />
+            <Text style={styles.logoText}>G-PIM</Text>
+          </View>
 
         <TouchableOpacity>
           <Ionicons name="notifications-outline" size={24} color="#2D3436" />
@@ -291,6 +331,22 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#636E72',
   },
+  remainingDays: {
+  fontSize: 14,
+  color: '#4F5D75',
+  marginTop: 4,
+  fontWeight: '600',
+},
+logoContainer: {
+  flexDirection: 'row',
+  alignItems: 'center',
+},
+
+logoIcon: {
+  width: 32,
+  height: 32,
+  borderRadius: 8,
+},
 });
 
 export default InventoryScreen;
