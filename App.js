@@ -4,12 +4,10 @@ import UserTypeSelectionScreen from './screens/interfazAdultoMayor/UserTypeSelec
 import InventoryScreen from './screens/interfazCuidador/InventoryScreen';
 import AddMedicineScreen from './screens/interfazCuidador/AddMedicineScreen';
 import EditMedicineScreen from './screens/interfazCuidador/EditMedicineScreen';
-<<<<<<< HEAD
 import PatientFormScreen from './screens/interfazAdultoMayor/PatientFormScreen';
-=======
 import AlertsScreen from './screens/interfazCuidador/AlertsScreen';
 import OffersScreen from './screens/interfazCuidador/OffersScreen';
->>>>>>> 19375000cdd1b470a640cd7dff88c90c94e6c7da
+import MedicineDetailScreen from './screens/interfazCuidador/MedicineDetailScreen';
 
 export default function App() {
   const [screen, setScreen] = useState('splash');
@@ -20,10 +18,6 @@ export default function App() {
     const timer = setTimeout(() => {
       setScreen('select');
     }, 3500);
-<<<<<<< HEAD
-=======
-
->>>>>>> 19375000cdd1b470a640cd7dff88c90c94e6c7da
     return () => clearTimeout(timer);
   }, []);
 
@@ -63,12 +57,28 @@ export default function App() {
         onEditPress={(medicine) => {
           setSelectedMedicine(medicine);
           setScreen('editMedicine');
+          
+        }}
+        onMedicinePress={(medicine) => {
+          setSelectedMedicine(medicine);
+          setScreen('medicineDetail');
         }}
         onAlertsPress={() => setScreen('alerts')}
         onOffersPress={() => setScreen('offers')}
       />
     );
   }
+
+    //Detalles Medicamento
+  if (screen === 'medicineDetail') {
+  return (
+    <MedicineDetailScreen
+      medicine={selectedMedicine}
+      onBack={() => setScreen('inventory')}
+      onEdit={() => setScreen('editMedicine')}
+    />
+  );
+}
 
   // Añadir
   if (screen === 'addMedicine') {
@@ -94,14 +104,14 @@ export default function App() {
     );
   }
 
-<<<<<<< HEAD
-=======
+
   // Alertas
   if (screen === 'alerts') {
     return (
       <AlertsScreen
         onBack={() => setScreen('inventory')}
         onGoInventory={() => setScreen('inventory')}
+        onGoOffers={() => setScreen('offers')}
       />
     );
   }
@@ -112,10 +122,10 @@ export default function App() {
       <OffersScreen
       onBack={() => setScreen('inventory')}
       onGoInventory={() => setScreen('inventory')}
-       />
+      onGoAlerts={() => setScreen('alerts')}
+      />
     );
   }
 
->>>>>>> 19375000cdd1b470a640cd7dff88c90c94e6c7da
   return null;
 }

@@ -31,7 +31,7 @@ const mockData = [
   },
 ];
 
-const OffersScreen = ({ onBack, onGoInventory }) => {
+const OffersScreen = ({ onBack, onGoInventory, onGoAlerts  }) => {
   
   const getBestPrice = (prices) => {
     return prices.reduce((min, item) =>
@@ -112,7 +112,7 @@ const OffersScreen = ({ onBack, onGoInventory }) => {
           <Text style={styles.navText}>Inicio</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem}>
+        <TouchableOpacity style={styles.navItem} onPress = {onGoAlerts}>
           <Ionicons name="alert-circle-outline" size={24} color="#E74C3C" />
           <Text style={styles.navText}>Alertas</Text>
         </TouchableOpacity>

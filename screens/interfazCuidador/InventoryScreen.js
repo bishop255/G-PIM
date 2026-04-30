@@ -16,7 +16,7 @@ import { useInventory } from '../../hook/useInventory';
 
 const PACIENTE_ID_DEMO = 'demo-paciente-001';
 
-const InventoryScreen = ({ onAddPress, onEditPress, onAlertsPress, onOffersPress }) => {
+const InventoryScreen = ({ onAddPress, onEditPress, onAlertsPress, onOffersPress, onMedicinePress, }) => {
   const [search, setSearch] = useState('');
   const { medicines, loading, deleteMedicine } = useInventory(PACIENTE_ID_DEMO);
 
@@ -134,11 +134,15 @@ const InventoryScreen = ({ onAddPress, onEditPress, onAlertsPress, onOffersPress
     }
   };
 
-  const renderItem = ({ item }) => {
-    const status = getStockStatus(item);
-    const remainingDays = getRemainingDays(item);
+const renderItem = ({ item }) => {
+  const status = getStockStatus(item);
+  const remainingDays = getRemainingDays(item);
 
-    return (
+  return (
+    <TouchableOpacity
+      onPress={() => onMedicinePress(item)}
+      activeOpacity={0.8}
+    >
       <View style={[styles.card, { backgroundColor: status.background }]}>
         <View style={styles.cardLeft}>
           <View style={[styles.iconBox, { borderColor: status.iconColor }]}>
@@ -177,8 +181,9 @@ const InventoryScreen = ({ onAddPress, onEditPress, onAlertsPress, onOffersPress
           <Ionicons name="ellipsis-vertical" size={20} color="#636E72" />
         </TouchableOpacity>
       </View>
-    );
-  };
+    </TouchableOpacity>
+  );
+};
 
   return (
     <View style={styles.container}>

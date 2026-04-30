@@ -11,9 +11,10 @@ import { Ionicons } from '@expo/vector-icons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useInventory } from '../../hook/useInventory';
 
+
 const PACIENTE_ID_DEMO = 'demo-paciente-001';
 
-const AlertsScreen = ({ onBack, onGoInventory }) => {
+const AlertsScreen = ({ onBack, onGoInventory, onGoOffers  }) => {
   const { medicines, loading } = useInventory(PACIENTE_ID_DEMO);
 
   const getRemainingDays = (item) => {
@@ -205,7 +206,7 @@ const AlertsScreen = ({ onBack, onGoInventory }) => {
           <Text style={[styles.navText, { color: '#E74C3C' }]}>Alertas</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem}>
+        <TouchableOpacity style={styles.navItem} onPress={onGoOffers}>
           <Ionicons name="cart-outline" size={24} color="#F39C12" />
           <Text style={[styles.navText, { color: '#F39C12' }]}>Ofertas</Text>
         </TouchableOpacity>
