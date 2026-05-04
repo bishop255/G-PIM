@@ -10,15 +10,17 @@ import {
   Alert,
   Image,
 } from 'react-native';
-
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Ionicons } from '@expo/vector-icons';
 import { useInventory } from '../../hook/useInventory';
+import SideMenu from '../../components/SideMenu';
 
 const PACIENTE_ID_DEMO = 'demo-paciente-001';
 
 const InventoryScreen = ({ onAddPress, onEditPress, onAlertsPress, onOffersPress, onMedicinePress, onHistoryPress }) => {
   const [search, setSearch] = useState('');
+  const [menuVisible, setMenuVisible] = useState(false);
+
   const { medicines, loading, deleteMedicine } = useInventory(PACIENTE_ID_DEMO);
 
   const confirmDelete = (id) => {
@@ -189,7 +191,7 @@ const renderItem = ({ item }) => {
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={onHistoryPress}>
+        <TouchableOpacity onPress={() => setMenuVisible(true)}>
           <Ionicons name="menu" size={24} color="#2D3436" />
         </TouchableOpacity>
 
@@ -271,6 +273,22 @@ const renderItem = ({ item }) => {
           <Text style={styles.navText}>Perfil</Text>
         </TouchableOpacity>
       </View>
+
+      <SideMenu
+        visible={menuVisible}
+        onClose={() => setMenuVisible(false)}
+        onNavigate={(screen) => {
+          setMenuVisible(false);
+
+
+          if (screen === 'history') onHistoryPress();
+          if (screen === 'profile') alert('Proximamente');
+          if (screen === 'settings') alert('Proximamente');
+          if (screen === 'logout') alert ('Proximamente');
+        }}
+      
+      />
+
     </View>
   );
 };
