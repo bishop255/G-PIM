@@ -10,13 +10,14 @@ import {
   Alert,
   Image,
 } from 'react-native';
+
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Ionicons } from '@expo/vector-icons';
 import { useInventory } from '../../hook/useInventory';
 
 const PACIENTE_ID_DEMO = 'demo-paciente-001';
 
-const InventoryScreen = ({ onAddPress, onEditPress, onAlertsPress, onOffersPress, onMedicinePress, }) => {
+const InventoryScreen = ({ onAddPress, onEditPress, onAlertsPress, onOffersPress, onMedicinePress, onHistoryPress }) => {
   const [search, setSearch] = useState('');
   const { medicines, loading, deleteMedicine } = useInventory(PACIENTE_ID_DEMO);
 
@@ -188,7 +189,7 @@ const renderItem = ({ item }) => {
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={onHistoryPress}>
           <Ionicons name="menu" size={24} color="#2D3436" />
         </TouchableOpacity>
 

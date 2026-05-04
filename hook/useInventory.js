@@ -7,6 +7,7 @@ import {
   updateDoc,
   addDoc,
   deleteDoc,
+  getDoc,
   serverTimestamp,
 } from 'firebase/firestore';
 
@@ -43,6 +44,19 @@ export const useInventory = (pacienteId) => {
     return () => unsubscribe();
   }, [pacienteId]);
 
+  const addMovement = async (movementData) => {
+  try {
+    const movementsRef = collection(db, 'pacientes', pacienteId, 'movimientos');
+
+    await addDoc(movementsRef, {
+      ...movementData,
+      createdAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Error registrando movimiento:', error);
+  }
+};
+
   const updateMedicineStock = async (medicineId, newQuantity) => {
     try {
       const medicineRef = doc(db, 'pacientes', pacienteId, 'inventario', medicineId);
@@ -56,6 +70,65 @@ export const useInventory = (pacienteId) => {
     }
   };
 
+  const consumeDose = async (medicine) => {
+  try {
+    const currentStock = Number(medicine.currentStock || 0);
+    const dailyDose = Number(medicine.dailyDose || 0);
+
+    const newStock = Math.max(currentStock - dailyDose, 0);
+
+    const medicineRef = doc(db, 'pacientes', pacienteId, 'inventario', medicine.id);
+
+    await updateDoc(medicineRef, {
+      currentStock: newStock,
+      updatedAt: serverTimestamp(),
+    });
+
+    await addMovement({
+      type: 'consume',
+      medicineId: medicine.id,
+      medicineName: medicine.name,
+      amount: dailyDose,
+      previousStock: currentStock,
+      newStock,
+      description: `Consumo de ${dailyDose} unidad(es)`,
+    });
+  } catch (error) {
+    console.error('Error consumiendo dosis:', error);
+  }
+};
+
+const replenishStock = async (medicineId, amount) => {
+  try {
+    const medicineRef = doc(db, 'pacientes', pacienteId, 'inventario', medicineId);
+
+    const medicineSnap = await getDoc(medicineRef);
+
+    if (!medicineSnap.exists()) return;
+
+    const medicineData = medicineSnap.data();
+    const currentStock = Number(medicineData.currentStock || 0);
+    const quantityToAdd = Number(amount || 0);
+    const newStock = currentStock + quantityToAdd;
+
+    await updateDoc(medicineRef, {
+      currentStock: newStock,
+      updatedAt: serverTimestamp(),
+    });
+
+    await addMovement({
+      type: 'replenish',
+      medicineId,
+      medicineName: medicineData.name,
+      amount: quantityToAdd,
+      previousStock: currentStock,
+      newStock,
+      description: `Reposición de ${quantityToAdd} unidad(es)`,
+    });
+  } catch (error) {
+    console.error('Error reponiendo stock:', error);
+  }
+};
 
 
   // MEDICAMENTO//
@@ -112,5 +185,8 @@ export const useInventory = (pacienteId) => {
     addMedicine,
     updateMedicine,
     deleteMedicine,
+    consumeDose,
+    replenishStock,
+    addMovement,
   };
 };

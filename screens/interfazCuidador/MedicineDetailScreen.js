@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   Alert,
   Animated,
   ScrollView,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -15,7 +17,13 @@ import { useInventory } from '../../hook/useInventory';
 const PACIENTE_ID_DEMO = 'demo-paciente-001';
 
 const MedicineDetailScreen = ({ medicine, onBack, onEdit }) => {
-  const { deleteMedicine, consumeDose } = useInventory(PACIENTE_ID_DEMO);
+  const { deleteMedicine, consumeDose, replenishStock } = useInventory(PACIENTE_ID_DEMO);
+
+  const [modalVisible, setModalVisible] = React.useState(false);
+  const [amount, setAmount] = useState('');
+
+  const [loadingAction, setLoadingAction] = useState(false);
+
 
   const getRemainingDays = () => {
     const stock = Number(medicine.currentStock || 0);
@@ -164,6 +172,24 @@ const MedicineDetailScreen = ({ medicine, onBack, onEdit }) => {
     onBack();
   };
 
+  const handleReplenish = async () => {
+  if (!amount || isNaN(amount)) {
+    Alert.alert('Error', 'Ingresa una cantidad válida');
+    return;
+  }
+
+  setLoadingAction(true);
+
+  await replenishStock(medicine.id, Number(amount));
+
+  setLoadingAction(false);
+  setModalVisible(false);
+  setAmount('');
+
+  Alert.alert('Stock actualizado', 'Se agregó correctamente');
+  onBack();
+};
+
   return (
     <ScrollView
       style={styles.container}
@@ -276,7 +302,7 @@ const MedicineDetailScreen = ({ medicine, onBack, onEdit }) => {
           <Text style={styles.primaryButtonText}>Consumir dosis</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.restockButton}>
+        <TouchableOpacity style={styles.restockButton} onPress={() => setModalVisible(true)}>
           <Ionicons name="add-circle-outline" size={22} color="#FFFFFF" />
           <Text style={styles.primaryButtonText}>Reponer stock</Text>
         </TouchableOpacity>
@@ -291,7 +317,50 @@ const MedicineDetailScreen = ({ medicine, onBack, onEdit }) => {
           <Text style={styles.primaryButtonText}>Eliminar medicamento</Text>
         </TouchableOpacity>
       </View>
+          <Modal
+      visible={modalVisible}
+      transparent
+      animationType="fade"
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContainer}>
+          
+          <Text style={styles.modalTitle}>Reponer stock</Text>
+
+          <TextInput
+            placeholder="Cantidad a agregar"
+            keyboardType="numeric"
+            value={amount}
+            onChangeText={setAmount}
+            style={styles.input}
+          />
+
+          <View style={styles.modalButtons}>
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setModalVisible(false)}
+            >
+              <Text style={styles.cancelText}>Cancelar</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.confirmButton,
+                      loadingAction && {opacity: 0.6}
+              ]}
+              onPress={handleReplenish}
+              disabled={loadingAction}
+            >
+              <Text style={styles.confirmText}>
+                {loadingAction ? 'Agregando...' : 'Agregar'}
+                </Text>
+            </TouchableOpacity>
+          </View>
+
+        </View>
+      </View>
+    </Modal>
     </ScrollView>
+    
   );
 };
 
@@ -500,4 +569,58 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     marginLeft: 8,
   },
+  modalOverlay: {
+  flex: 1,
+  backgroundColor: 'rgba(0,0,0,0.4)',
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+
+modalContainer: {
+  width: '85%',
+  backgroundColor: '#FFFFFF',
+  borderRadius: 20,
+  padding: 20,
+},
+
+modalTitle: {
+  fontSize: 18,
+  fontWeight: '800',
+  marginBottom: 15,
+  textAlign: 'center',
+},
+
+input: {
+  borderWidth: 1,
+  borderColor: '#DFE6E9',
+  borderRadius: 12,
+  padding: 12,
+  fontSize: 16,
+  marginBottom: 20,
+},
+
+modalButtons: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+},
+
+cancelButton: {
+  padding: 12,
+},
+
+cancelText: {
+  color: '#636E72',
+  fontWeight: '700',
+},
+
+confirmButton: {
+  backgroundColor: '#2D9CDB',
+  padding: 12,
+  borderRadius: 12,
+},
+
+confirmText: {
+  color: '#FFFFFF',
+  fontWeight: '800',
+},
 });

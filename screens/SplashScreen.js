@@ -36,8 +36,7 @@ const SplashScreen = ({ navigation }) => {
       </View>
     </View>
   );
-}; // <--- ESTA LLAVE ES LA QUE FALTABA
-
+};
 const styles = StyleSheet.create({
   container: {
     flex: 1,

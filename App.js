@@ -8,6 +8,7 @@ import PatientFormScreen from './screens/interfazAdultoMayor/PatientFormScreen';
 import AlertsScreen from './screens/interfazCuidador/AlertsScreen';
 import OffersScreen from './screens/interfazCuidador/OffersScreen';
 import MedicineDetailScreen from './screens/interfazCuidador/MedicineDetailScreen';
+import HistoryScreen from './screens/interfazCuidador/HistoryScreen';
 
 export default function App() {
   const [screen, setScreen] = useState('splash');
@@ -39,7 +40,7 @@ export default function App() {
     );
   }
 
-  // FORMULARIO PACIENTE
+  // Formulario paciente
   if (screen === 'patientForm') {
     return (
       <PatientFormScreen
@@ -59,12 +60,13 @@ export default function App() {
           setScreen('editMedicine');
           
         }}
+        onAlertsPress={() => setScreen('alerts')}
+        onOffersPress={() => setScreen('offers')}
         onMedicinePress={(medicine) => {
           setSelectedMedicine(medicine);
           setScreen('medicineDetail');
         }}
-        onAlertsPress={() => setScreen('alerts')}
-        onOffersPress={() => setScreen('offers')}
+        onHistoryPress={() => setScreen('history')}
       />
     );
   }
@@ -123,6 +125,15 @@ export default function App() {
       onBack={() => setScreen('inventory')}
       onGoInventory={() => setScreen('inventory')}
       onGoAlerts={() => setScreen('alerts')}
+      />
+    );
+  }
+
+  // Historial Movimientos
+  if (screen === 'history') {
+    return (
+      <HistoryScreen
+      onBack={() => setScreen('inventory')}
       />
     );
   }
