@@ -9,18 +9,30 @@ import AlertsScreen from './screens/interfazCuidador/AlertsScreen';
 import OffersScreen from './screens/interfazCuidador/OffersScreen';
 import MedicineDetailScreen from './screens/interfazCuidador/MedicineDetailScreen';
 import HistoryScreen from './screens/interfazCuidador/HistoryScreen';
+import { setupNotifications } from './services/notificationService';
+import SettingsScreen from './screens/interfazCuidador/SettingsScreen';
 
 export default function App() {
   const [screen, setScreen] = useState('splash');
   const [selectedMedicine, setSelectedMedicine] = useState(null);
+  const [settings, setSettings] = useState({ darkMode: false, largeText: false})
 
-  useEffect(() => {
+useEffect(() => {
+// setupNotifications(); // ⚠️ Activar solo en development build
 
-    const timer = setTimeout(() => {
-      setScreen('select');
-    }, 3500);
-    return () => clearTimeout(timer);
-  }, []);
+  const timer = setTimeout(() => {
+    setScreen('select');
+  }, 3500);
+
+  return () => clearTimeout(timer);
+}, []);
+
+  const updateSettings = (newSettings) => {
+    setSettings((prev) => ({
+      ...prev,
+      ...newSettings,
+    }));
+  };
 
   // Splash
   if (screen === 'splash') return <SplashScreen />;
@@ -54,6 +66,7 @@ export default function App() {
   if (screen === 'inventory') {
     return (
       <InventoryScreen
+        settings={settings}
         onAddPress={() => setScreen('addMedicine')}
         onEditPress={(medicine) => {
           setSelectedMedicine(medicine);
@@ -67,6 +80,7 @@ export default function App() {
           setScreen('medicineDetail');
         }}
         onHistoryPress={() => setScreen('history')}
+        onSettingsPress={() => setScreen('settings')}
       />
     );
   }
@@ -75,6 +89,7 @@ export default function App() {
   if (screen === 'medicineDetail') {
   return (
     <MedicineDetailScreen
+      settings={settings}
       medicine={selectedMedicine}
       onBack={() => setScreen('inventory')}
       onEdit={() => setScreen('editMedicine')}
@@ -111,6 +126,7 @@ export default function App() {
   if (screen === 'alerts') {
     return (
       <AlertsScreen
+        settings={settings}
         onBack={() => setScreen('inventory')}
         onGoInventory={() => setScreen('inventory')}
         onGoOffers={() => setScreen('offers')}
@@ -122,12 +138,15 @@ export default function App() {
   if (screen === 'offers') {
     return (
       <OffersScreen
+      settings={settings}
       onBack={() => setScreen('inventory')}
       onGoInventory={() => setScreen('inventory')}
       onGoAlerts={() => setScreen('alerts')}
       />
     );
   }
+
+  //----------Boton Hamburguesa----------------
 
   // Historial Movimientos
   if (screen === 'history') {
@@ -136,6 +155,17 @@ export default function App() {
       onBack={() => setScreen('inventory')}
       />
     );
+  }
+
+  //Ajuste
+  if (screen === 'settings') {
+    return (
+      <SettingsScreen
+      settings={settings}
+      onBack={() => setScreen('inventory')}
+      onUpdateSettings={updateSettings}
+      />
+    )
   }
 
   return null;

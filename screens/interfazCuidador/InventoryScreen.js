@@ -11,17 +11,25 @@ import {
   Image,
 } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { getTheme } from '../../theme/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useInventory } from '../../hook/useInventory';
 import SideMenu from '../../components/SideMenu';
 
 const PACIENTE_ID_DEMO = 'demo-paciente-001';
 
-const InventoryScreen = ({ onAddPress, onEditPress, onAlertsPress, onOffersPress, onMedicinePress, onHistoryPress }) => {
+const InventoryScreen = ({ settings, onAddPress, onEditPress, onAlertsPress, onOffersPress, onMedicinePress, onHistoryPress, onSettingsPress }) => {
   const [search, setSearch] = useState('');
   const [menuVisible, setMenuVisible] = useState(false);
 
   const { medicines, loading, deleteMedicine } = useInventory(PACIENTE_ID_DEMO);
+  
+  const { colors, fontSizes } = getTheme(settings);
+
+  const isDark = settings?.darkMode;
+  const isLarge = settings?.largeText;
+
+
 
   const confirmDelete = (id) => {
     Alert.alert('Eliminar medicamento', '¿Estás seguro?', [
@@ -189,7 +197,7 @@ const renderItem = ({ item }) => {
 };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {backgroundColor: colors.background}]}>
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => setMenuVisible(true)}>
           <Ionicons name="menu" size={24} color="#2D3436" />
@@ -209,9 +217,9 @@ const renderItem = ({ item }) => {
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.header}>Inventario Médico</Text>
+      <Text style={[styles.header, {color: colors.text, fontSize: fontSizes.title}]}>Inventario Médico</Text>
 
-      <View style={styles.searchContainer}>
+      <View style={[styles.searchContainer, {backgroundColor: colors.card}]}>
         <Ionicons
           name="search"
           size={20}
@@ -282,8 +290,8 @@ const renderItem = ({ item }) => {
 
 
           if (screen === 'history') onHistoryPress();
-          if (screen === 'profile') alert('Proximamente');
-          if (screen === 'settings') alert('Proximamente');
+          if (screen === 'profile') alert ('Proximamente');
+          if (screen === 'settings') onSettingsPress();
           if (screen === 'logout') alert ('Proximamente');
         }}
       

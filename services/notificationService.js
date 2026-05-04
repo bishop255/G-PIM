@@ -13,7 +13,7 @@
 
     export const setupNotifications = async () => {
     if (!Device.isDevice) {
-        console.log('Las notificaciones funcionan mejor en dispositivo físico.');
+        console.log('Usa un dispositivo físico para probar notificaciones reales.');
     }
 
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -41,13 +41,20 @@
     return true;
     };
 
-    export const sendLocalStockNotification = async ({ title, body }) => {
-    await Notifications.scheduleNotificationAsync({
+    export const scheduleStockNotification = async ({ title, body, seconds = 5 }) => {
+    return await Notifications.scheduleNotificationAsync({
         content: {
         title,
         body,
         sound: true,
         },
-        trigger: null,
+        trigger: {
+        seconds,
+        channelId: 'stock-alerts',
+        },
     });
+    };
+
+    export const cancelAllStockNotifications = async () => {
+    await Notifications.cancelAllScheduledNotificationsAsync();
     };

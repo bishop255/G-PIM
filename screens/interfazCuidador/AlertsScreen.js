@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
+import { scheduleStockNotification, cancelAllStockNotifications } from '../../services/notificationService';
 import { Ionicons } from '@expo/vector-icons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useInventory } from '../../hook/useInventory';
@@ -95,6 +96,34 @@ const AlertsScreen = ({ onBack, onGoInventory, onGoOffers  }) => {
       item.alertInfo.title === 'Sin stock' ||
       item.alertInfo.title === 'Se agota muy pronto'
   ).length;
+
+  useEffect(() => {
+  const scheduleAlerts = async () => {
+    if (!alertMedicines.length) {
+      await cancelAllStockNotifications();
+      return;
+    }
+
+    await cancelAllStockNotifications();
+
+    const criticalAlerts = alertMedicines.filter(
+      (item) =>
+        item.alertInfo.title === 'Sin stock' ||
+        item.alertInfo.title === 'Se agota muy pronto' ||
+        item.alertInfo.title === 'Stock crítico'
+    );
+
+    for (const item of criticalAlerts.slice(0, 3)) {
+      await scheduleStockNotification({
+        title: 'Alerta G-PIM',
+        body: `${item.medicineName || item.name}: ${item.alertInfo.message}`,
+        seconds: 5,
+      });
+    }
+  };
+
+  scheduleAlerts();
+}, [alertMedicines]);
 
   const renderItem = ({ item }) => {
     const info = item.alertInfo;
