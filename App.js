@@ -1,3 +1,4 @@
+import ProfileScreen from './screens/interfazCuidador/ProfileScreen';
 import React, { useState, useEffect } from 'react';
 import SplashScreen from './screens/SplashScreen';
 import UserTypeSelectionScreen from './screens/interfazAdultoMayor/UserTypeSelectionScreen';
@@ -66,23 +67,13 @@ useEffect(() => {
   if (screen === 'inventory') {
     return (
       <InventoryScreen
-        settings={settings}
-        onAddPress={() => setScreen('addMedicine')}
-        onEditPress={(medicine) => {
-          setSelectedMedicine(medicine);
-          setScreen('editMedicine');
-          
-        }}
-        onAlertsPress={() => setScreen('alerts')}
-        onOffersPress={() => setScreen('offers')}
-        onMedicinePress={(medicine) => {
-          setSelectedMedicine(medicine);
-          setScreen('medicineDetail');
-        }}
-        onHistoryPress={() => setScreen('history')}
-        onSettingsPress={() => setScreen('settings')}
-      />
-    );
+    settings={settings}
+    onAddPress={() => setScreen('addMedicine')}
+    // ... otros on...Press
+    onSettingsPress={() => setScreen('settings')}
+    onProfilePress={() => setScreen('profile')} // <--- ESTA ES LA CONEXIÓN CLAVE
+  />
+);
   }
 
     //Detalles Medicamento
@@ -146,6 +137,16 @@ useEffect(() => {
     );
   }
 
+  // Perfil 
+  // Lógica para mostrar la pantalla de Perfil
+  if (screen === 'profile') {
+    return (
+      <ProfileScreen 
+        onBack={() => setScreen('inventory')} // Esto hace que el botón "Volver" funcione
+      />
+    );
+  }
+
   //----------Boton Hamburguesa----------------
 
   // Historial Movimientos
@@ -167,6 +168,8 @@ useEffect(() => {
       />
     )
   }
+
+
 
   return null;
 }
