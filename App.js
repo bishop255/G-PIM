@@ -67,13 +67,23 @@ useEffect(() => {
   if (screen === 'inventory') {
     return (
       <InventoryScreen
-    settings={settings}
-    onAddPress={() => setScreen('addMedicine')}
-    // ... otros on...Press
-    onSettingsPress={() => setScreen('settings')}
-    onProfilePress={() => setScreen('profile')} // <--- ESTA ES LA CONEXIÓN CLAVE
-  />
-);
+        settings={settings}
+        onAddPress={() => setScreen('addMedicine')}
+        onEditPress={(medicine) => {
+          setSelectedMedicine(medicine);
+          setScreen('editMedicine');
+        }}
+        onAlertsPress={() => setScreen('alerts')}
+        onOffersPress={() => setScreen('offers')}
+        onMedicinePress={(medicine) => {
+          setSelectedMedicine(medicine);
+          setScreen('medicineDetail');
+        }}
+        onHistoryPress={() => setScreen('history')}
+        onSettingsPress={() => setScreen('settings')}
+        onProfilePress={() => setScreen('profile')}
+      />
+    );
   }
 
     //Detalles Medicamento
@@ -92,6 +102,7 @@ useEffect(() => {
   if (screen === 'addMedicine') {
     return (
       <AddMedicineScreen
+        settings={settings}
         onCancel={() => setScreen('inventory')}
         onSaved={() => setScreen('inventory')}
       />
@@ -102,6 +113,7 @@ useEffect(() => {
   if (screen === 'editMedicine') {
     return (
       <EditMedicineScreen
+        settings={settings}
         medicine={selectedMedicine}
         onCancel={() => setScreen('inventory')}
         onSaved={() => {
@@ -153,6 +165,7 @@ useEffect(() => {
   if (screen === 'history') {
     return (
       <HistoryScreen
+      settings={settings}
       onBack={() => setScreen('inventory')}
       />
     );

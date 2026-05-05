@@ -11,8 +11,8 @@ import {
   Image,
 } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { getTheme } from '../../theme/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { getTheme } from '../../theme/theme';
 import { useInventory } from '../../hook/useInventory';
 import SideMenu from '../../components/SideMenu';
 
@@ -27,7 +27,7 @@ const InventoryScreen = ({
   onMedicinePress, 
   onHistoryPress, 
   onSettingsPress, 
-  onProfilePress // Prop recibido de App.js
+  onProfilePress 
 }) => {
   const [search, setSearch] = useState('');
   const [menuVisible, setMenuVisible] = useState(false);
@@ -120,17 +120,66 @@ const InventoryScreen = ({
                 color={status.iconColor}
               />
             </View>
+
             <View style={styles.textBox}>
-              <Text style={styles.productName}>{item.name}</Text>
-              <Text style={styles.productStock}>Stock: {item.currentStock ?? 0} unidades</Text>
-              <Text style={styles.remainingDays}>
-                {remainingDays === null ? 'Dosis diaria no definida' : 
-                 remainingDays === 1 ? 'Queda 1 día de stock' : `Quedan ${remainingDays} días de stock`}
+              <Text
+                style={[
+                  styles.productName,
+                  {
+                    color: '#2D3436',
+                    fontSize: fontSizes.normal + 3,
+                  },
+                ]}
+              >
+                {item.name}
               </Text>
-              <Text style={[styles.statusText, { color: status.color }]}>{status.label}</Text>
+
+              <Text
+                style={[
+                  styles.productStock,
+                  {
+                    color: '#636E72',
+                    fontSize: fontSizes.normal,
+                  },
+                ]}
+              >
+                Stock: {item.currentStock ?? 0} unidades
+              </Text>
+
+              <Text
+                style={[
+                  styles.remainingDays,
+                  {
+                    color: '#4F5D75',
+                    fontSize: fontSizes.normal,
+                  },
+                ]}
+              >
+                {remainingDays === null
+                  ? 'Dosis diaria no definida'
+                  : remainingDays === 1
+                  ? 'Queda 1 día de stock'
+                  : `Quedan ${remainingDays} días de stock`}
+              </Text>
+
+              <Text
+                style={[
+                  styles.statusText,
+                  {
+                    color: status.color,
+                    fontSize: fontSizes.small,
+                  },
+                ]}
+              >
+                {status.label}
+              </Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.editButton} onPress={() => handleOptions(item)}>
+
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => handleOptions(item)}
+          >
             <Ionicons name="ellipsis-vertical" size={20} color="#636E72" />
           </TouchableOpacity>
         </View>
@@ -139,31 +188,60 @@ const InventoryScreen = ({
   };
 
   return (
-    <View style={[styles.container, {backgroundColor: colors.background}]}>
-      {/* BARRA SUPERIOR */}
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => setMenuVisible(true)}>
-          <Ionicons name="menu" size={24} color="#2D3436" />
+          <Ionicons name="menu" size={24} color={colors.text} />
         </TouchableOpacity>
 
         <View style={styles.logoContainer}>
-          <Image source={require('../../assets/logo.png')} style={styles.logoIcon} resizeMode="contain" />
-          <Text style={styles.logoText}>G-PIM</Text>
+          <Image
+            source={require('../../assets/logo.png')}
+            style={styles.logoIcon}
+            resizeMode="contain"
+          />
+          <Text
+            style={[
+              styles.logoText,
+              { color: colors.text, fontSize: fontSizes.header },
+            ]}
+          >
+            G-PIM
+          </Text>
         </View>
 
         <TouchableOpacity>
-          <Ionicons name="notifications-outline" size={24} color="#2D3436" />
+          <Ionicons
+            name="notifications-outline"
+            size={24}
+            color={colors.text}
+          />
         </TouchableOpacity>
       </View>
 
-      <Text style={[styles.header, {color: colors.text, fontSize: fontSizes.title}]}>Inventario Médico</Text>
+      <Text
+        style={[
+          styles.header,
+          { color: colors.text, fontSize: fontSizes.title },
+        ]}
+      >
+        Inventario Médico
+      </Text>
 
-      {/* BUSCADOR */}
-      <View style={[styles.searchContainer, {backgroundColor: colors.card}]}>
-        <Ionicons name="search" size={20} color="#B2BEC3" style={styles.searchIcon} />
+      <View style={[styles.searchContainer, { backgroundColor: colors.card }]}>
+        <Ionicons
+          name="search"
+          size={20}
+          color={colors.secondaryText}
+          style={styles.searchIcon}
+        />
         <TextInput
           placeholder="Buscar medicamento..."
-          style={styles.searchInput}
+          placeholderTextColor={colors.secondaryText}
+          style={[
+            styles.searchInput,
+            { color: colors.text, fontSize: fontSizes.normal },
+          ]}
           value={search}
           onChangeText={setSearch}
         />
@@ -172,8 +250,15 @@ const InventoryScreen = ({
       {/* LISTA O CARGANDO */}
       {loading ? (
         <View style={styles.centerContent}>
-          <ActivityIndicator size="large" color="#42B65A" />
-          <Text style={styles.loadingText}>Cargando inventario...</Text>
+          <ActivityIndicator size="large" />
+          <Text
+            style={[
+              styles.loadingText,
+              { color: colors.secondaryText, fontSize: fontSizes.normal },
+            ]}
+          >
+            Cargando inventario...
+          </Text>
         </View>
       ) : (
         <FlatList
@@ -184,8 +269,19 @@ const InventoryScreen = ({
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
             <View style={styles.centerContent}>
-              <Ionicons name="medkit-outline" size={48} color="#B2BEC3" />
-              <Text style={styles.emptyText}>No hay medicamentos registrados</Text>
+              <Ionicons
+                name="medkit-outline"
+                size={48}
+                color={colors.secondaryText}
+              />
+              <Text
+                style={[
+                  styles.emptyText,
+                  { color: colors.secondaryText, fontSize: fontSizes.normal },
+                ]}
+              >
+                No hay medicamentos registrados
+              </Text>
             </View>
           }
         />
@@ -194,60 +290,172 @@ const InventoryScreen = ({
       {/* BOTÓN FLOTANTE AÑADIR */}
       <TouchableOpacity style={styles.addButton} onPress={onAddPress}>
         <Ionicons name="add" size={24} color="#FFFFFF" />
-        <Text style={styles.addButtonText}>Añadir medicamento</Text>
+        <Text style={[styles.addButtonText, { fontSize: fontSizes.button }]}>
+          Añadir medicamento
+        </Text>
       </TouchableOpacity>
 
-      {/* NAVEGACIÓN INFERIOR (CORREGIDO) */}
-      <View style={styles.bottomNav}>
+      <View style={[styles.bottomNav, { backgroundColor: colors.card }]}>
         <TouchableOpacity style={styles.navItem}>
           <Ionicons name="home" size={24} color="#42B65A" />
-          <Text style={[styles.navText, { color: '#42B65A' }]}>Inicio</Text>
+          <Text
+            style={[
+              styles.navText,
+              { color: '#42B65A', fontSize: fontSizes.small },
+            ]}
+          >
+            Inicio
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.navItem} onPress={onAlertsPress}>
           <Ionicons name="alert-circle-outline" size={24} color="#E74C3C" />
-          <Text style={[styles.navText, { color: '#E74C3C' }]}>Alertas</Text>
+          <Text
+            style={[
+              styles.navText,
+              { color: '#E74C3C', fontSize: fontSizes.small },
+            ]}
+          >
+            Alertas
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.navItem} onPress={onOffersPress}>
           <Ionicons name="cart-outline" size={24} color="#F39C12" />
-          <Text style={[styles.navText, { color: '#F39C12' }]}>Ofertas</Text>
+          <Text
+            style={[
+              styles.navText,
+              { color: '#F39C12', fontSize: fontSizes.small },
+            ]}
+          >
+            Ofertas
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.navItem} onPress={onProfilePress}>
-          <Ionicons name="person-outline" size={24} color="#2D3436" />
-          <Text style={styles.navText}>Perfil</Text>
+          <Ionicons name="person-outline" size={24} color={colors.text} />
+          <Text
+            style={[
+              styles.navText,
+              { color: colors.text, fontSize: fontSizes.small },
+            ]}
+          >
+            Perfil
+          </Text>
         </TouchableOpacity>
       </View>
 
-      {/* MENÚ LATERAL */}
-      <SideMenu
-        visible={menuVisible}
-        onClose={() => setMenuVisible(false)}
-        onNavigate={(target) => {
-          setMenuVisible(false);
-          if (target === 'history') onHistoryPress();
-          if (target === 'profile') onProfilePress();
-          if (target === 'settings') onSettingsPress();
-          if (target === 'logout') Alert.alert('Sesión', 'Cerrando sesión...');
-        }}
-      />
+        <SideMenu
+          visible={menuVisible}
+          settings={settings}
+          onClose={() => setMenuVisible(false)}
+          onNavigate={(screen) => {
+            setMenuVisible(false);
+
+            if (screen === 'history') onHistoryPress();
+            if (screen === 'profile') onProfilePress();;
+            if (screen === 'settings') onSettingsPress();
+            if (screen === 'logout') alert('Próximamente');
+          }}
+        />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F7F7F7', paddingHorizontal: 20, paddingTop: 55 },
-  topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  logoContainer: { flexDirection: 'row', alignItems: 'center' },
-  logoIcon: { width: 32, height: 32, borderRadius: 8, marginRight: 6 },
-  logoText: { fontSize: 20, fontWeight: '800', color: '#2D3436' },
-  header: { fontSize: 28, fontWeight: 'bold', color: '#2D3436', marginTop: 20, marginBottom: 18 },
+  container: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 55,
+  },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logoIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    marginRight: 6,
+  },
+  logoText: {
+    fontWeight: '800',
+  },
+  header: {
+    fontWeight: 'bold',
+    marginTop: 20,
+    marginBottom: 18,
+  },
   searchContainer: {
-    flexDirection: 'row', backgroundColor: '#FFFFFF', paddingHorizontal: 14,
-    paddingVertical: 12, borderRadius: 16, alignItems: 'center', marginBottom: 20,
-    elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08, shadowRadius: 4,
+    flexDirection: 'row',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 16,
+    alignItems: 'center',
+    marginBottom: 20,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+  },
+  listContent: {
+    paddingBottom: 185,
+  },
+  card: {
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 14,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  cardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  iconBox: {
+    width: 64,
+    height: 64,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+    borderWidth: 2,
+  },
+  textBox: {
+    flex: 1,
+  },
+  productName: {
+    fontWeight: '700',
+  },
+  productStock: {
+    marginTop: 4,
+  },
+  remainingDays: {
+    marginTop: 4,
+    fontWeight: '600',
+  },
+  statusText: {
+    fontWeight: '700',
+    marginTop: 6,
+  },
+  editButton: {
+    padding: 6,
+    marginLeft: 10,
   },
   searchIcon: { marginRight: 10 },
   searchInput: { flex: 1, fontSize: 16 },
@@ -262,16 +470,60 @@ const styles = StyleSheet.create({
   statusText: { fontSize: 13, fontWeight: '700', marginTop: 6 },
   editButton: { padding: 6, marginLeft: 10 },
   addButton: {
-    position: 'absolute', left: 20, right: 20, bottom: 90, backgroundColor: '#42B65A',
-    borderRadius: 16, paddingVertical: 15, flexDirection: 'row', justifyContent: 'center',
-    alignItems: 'center', elevation: 4,
+    position: 'absolute',
+    left: 20,
+    right: 20,
+    bottom: 90,
+    backgroundColor: '#42B65A',
+    borderRadius: 16,
+    paddingVertical: 15,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+  },
+  addButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    marginLeft: 8,
   },
   addButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700', marginLeft: 8 },
   bottomNav: {
-    position: 'absolute', left: 0, right: 0, bottom: 0, height: 75, backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24, borderTopRightRadius: 24, flexDirection: 'row',
-    justifyContent: 'space-around', alignItems: 'center', elevation: 12,
-    shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.12, shadowRadius: 8,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 75,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    elevation: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+  },
+  navItem: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  navText: {
+    fontWeight: '700',
+    marginTop: 3,
+  },
+  centerContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 60,
+  },
+  loadingText: {
+    marginTop: 10,
+  },
+  emptyText: {
+    marginTop: 12,
+    textAlign: 'center',
   },
   navItem: { alignItems: 'center', justifyContent: 'center' },
   navText: { fontSize: 11, fontWeight: '700', color: '#2D3436', marginTop: 3 },

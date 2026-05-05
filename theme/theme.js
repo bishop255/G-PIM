@@ -21,7 +21,7 @@ export const getTheme = (settings = {}) => {
 
     fontSizes: {
       title: isLarge ? 32 : 28,
-      subtitle: isLarge ? 18 : 15,
+      header: isLarge ? 22 : 20,
       normal: isLarge ? 17 : 14,
       small: isLarge ? 14 : 11,
       button: isLarge ? 18 : 16,

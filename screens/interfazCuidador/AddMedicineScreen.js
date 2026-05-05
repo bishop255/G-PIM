@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View,
- Text,
+  Text,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -9,14 +9,16 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { getTheme } from '../../theme/theme';
 import { useInventory } from '../../hook/useInventory';
 
 const PACIENTE_ID_DEMO = 'demo-paciente-001';
 
 const categories = ['Tableta', 'Jarabe', 'Inyección', 'Otro'];
 
-const AddMedicineScreen = ({ onCancel, onSaved }) => {
+const AddMedicineScreen = ({ settings, onCancel, onSaved }) => {
   const { addMedicine } = useInventory(PACIENTE_ID_DEMO);
+  const { colors, fontSizes } = getTheme(settings);
 
   const [name, setName] = useState('');
   const [currentStock, setCurrentStock] = useState('');
@@ -65,9 +67,7 @@ const AddMedicineScreen = ({ onCancel, onSaved }) => {
       setDailyDose('');
       setCategory('Tableta');
 
-      if (onSaved) {
-        onSaved();
-      }
+      onSaved?.();
     } catch (error) {
       Alert.alert('Error', 'No se pudo guardar el medicamento.');
     } finally {
@@ -76,53 +76,149 @@ const AddMedicineScreen = ({ onCancel, onSaved }) => {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.scrollContent}>
-      <View style={styles.container}>
+    <ScrollView
+      style={{ backgroundColor: colors.background }}
+      contentContainerStyle={[
+        styles.scrollContent,
+        { backgroundColor: colors.background },
+      ]}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={onCancel}>
-            <Ionicons name="arrow-back" size={24} color="#2D3436" />
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={styles.title}>Añadir Medicamento</Text>
+
+          <Text
+            style={[
+              styles.title,
+              { color: colors.text, fontSize: fontSizes.header },
+            ]}
+          >
+            Añadir Medicamento
+          </Text>
+
           <View style={{ width: 24 }} />
         </View>
 
-        <View style={styles.form}>
-          <Text style={styles.label}>Nombre</Text>
+        <View
+          style={[
+            styles.form,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.label,
+              { color: colors.text, fontSize: fontSizes.normal },
+            ]}
+          >
+            Nombre
+          </Text>
+
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                backgroundColor: colors.isDark ? '#2A2A2A' : '#EFEFEF',
+                color: colors.text,
+                fontSize: fontSizes.normal,
+              },
+            ]}
             placeholder="Ej: Omeprazol"
+            placeholderTextColor={colors.secondaryText}
             value={name}
             onChangeText={setName}
           />
 
-          <Text style={styles.label}>Cantidad inicial</Text>
+          <Text
+            style={[
+              styles.label,
+              { color: colors.text, fontSize: fontSizes.normal },
+            ]}
+          >
+            Cantidad inicial
+          </Text>
+
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                backgroundColor: colors.isDark ? '#2A2A2A' : '#EFEFEF',
+                color: colors.text,
+                fontSize: fontSizes.normal,
+              },
+            ]}
             placeholder="Ej: 60"
+            placeholderTextColor={colors.secondaryText}
             keyboardType="numeric"
             value={currentStock}
             onChangeText={setCurrentStock}
           />
 
-          <Text style={styles.label}>Stock mínimo</Text>
+          <Text
+            style={[
+              styles.label,
+              { color: colors.text, fontSize: fontSizes.normal },
+            ]}
+          >
+            Stock mínimo
+          </Text>
+
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                backgroundColor: colors.isDark ? '#2A2A2A' : '#EFEFEF',
+                color: colors.text,
+                fontSize: fontSizes.normal,
+              },
+            ]}
             placeholder="Ej: 10"
+            placeholderTextColor={colors.secondaryText}
             keyboardType="numeric"
             value={minStock}
             onChangeText={setMinStock}
           />
 
-          <Text style={styles.label}>Dosis diaria</Text>
+          <Text
+            style={[
+              styles.label,
+              { color: colors.text, fontSize: fontSizes.normal },
+            ]}
+          >
+            Dosis diaria
+          </Text>
+
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                backgroundColor: colors.isDark ? '#2A2A2A' : '#EFEFEF',
+                color: colors.text,
+                fontSize: fontSizes.normal,
+              },
+            ]}
             placeholder="Ej: 2"
+            placeholderTextColor={colors.secondaryText}
             keyboardType="numeric"
             value={dailyDose}
             onChangeText={setDailyDose}
           />
 
-          <Text style={styles.label}>Categoría</Text>
+          <Text
+            style={[
+              styles.label,
+              { color: colors.text, fontSize: fontSizes.normal },
+            ]}
+          >
+            Categoría
+          </Text>
+
           <View style={styles.categoryContainer}>
             {categories.map((item) => {
               const selected = item === category;
@@ -130,13 +226,25 @@ const AddMedicineScreen = ({ onCancel, onSaved }) => {
               return (
                 <TouchableOpacity
                   key={item}
-                  style={[styles.categoryButton, selected && styles.categoryButtonSelected]}
+                  style={[
+                    styles.categoryButton,
+                    {
+                      backgroundColor: selected
+                        ? colors.primary
+                        : colors.isDark
+                        ? '#2A2A2A'
+                        : '#EFEFEF',
+                    },
+                  ]}
                   onPress={() => setCategory(item)}
                 >
                   <Text
                     style={[
                       styles.categoryText,
-                      selected && styles.categoryTextSelected,
+                      {
+                        color: selected ? '#FFFFFF' : colors.text,
+                        fontSize: fontSizes.normal,
+                      },
                     ]}
                   >
                     {item}
@@ -147,18 +255,37 @@ const AddMedicineScreen = ({ onCancel, onSaved }) => {
           </View>
 
           <TouchableOpacity
-            style={[styles.saveButton, saving && styles.buttonDisabled]}
+            style={[
+              styles.saveButton,
+              { backgroundColor: colors.primary },
+              saving && styles.buttonDisabled,
+            ]}
             onPress={handleSave}
             disabled={saving}
           >
             <Ionicons name="add" size={20} color="#FFFFFF" />
-            <Text style={styles.saveButtonText}>
+            <Text
+              style={[
+                styles.saveButtonText,
+                { fontSize: fontSizes.button },
+              ]}
+            >
               {saving ? 'Guardando...' : 'Añadir medicamento'}
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
-            <Text style={styles.cancelButtonText}>Cancelar</Text>
+          <TouchableOpacity
+            style={[styles.cancelButton, { backgroundColor: colors.danger }]}
+            onPress={onCancel}
+          >
+            <Text
+              style={[
+                styles.cancelButtonText,
+                { fontSize: fontSizes.button },
+              ]}
+            >
+              Cancelar
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -169,7 +296,6 @@ const AddMedicineScreen = ({ onCancel, onSaved }) => {
 const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
-    backgroundColor: '#F7F7F7',
   },
   container: {
     flex: 1,
@@ -184,34 +310,27 @@ const styles = StyleSheet.create({
     marginBottom: 26,
   },
   title: {
-    fontSize: 22,
     fontWeight: '800',
-    color: '#2D3436',
   },
   form: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 24,
     padding: 20,
     elevation: 2,
+    borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
   },
   label: {
-    fontSize: 14,
     fontWeight: '700',
-    color: '#2D3436',
     marginBottom: 8,
     marginTop: 10,
   },
   input: {
-    backgroundColor: '#EFEFEF',
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    fontSize: 15,
-    color: '#2D3436',
   },
   categoryContainer: {
     flexDirection: 'row',
@@ -223,23 +342,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 14,
-    backgroundColor: '#EFEFEF',
     marginRight: 8,
     marginBottom: 8,
   },
-  categoryButtonSelected: {
-    backgroundColor: '#42B65A',
-  },
   categoryText: {
-    color: '#2D3436',
     fontWeight: '600',
-  },
-  categoryTextSelected: {
-    color: '#FFFFFF',
   },
   saveButton: {
     marginTop: 18,
-    backgroundColor: '#42B65A',
     borderRadius: 16,
     paddingVertical: 15,
     flexDirection: 'row',
@@ -248,13 +358,11 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
     fontWeight: '800',
     marginLeft: 8,
   },
   cancelButton: {
     marginTop: 12,
-    backgroundColor: '#FF3B30',
     borderRadius: 16,
     paddingVertical: 15,
     justifyContent: 'center',
@@ -262,7 +370,6 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
     fontWeight: '800',
   },
   buttonDisabled: {

@@ -7,16 +7,20 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { scheduleStockNotification, cancelAllStockNotifications } from '../../services/notificationService';
 import { Ionicons } from '@expo/vector-icons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { getTheme } from '../../theme/theme';
+import {
+  scheduleStockNotification,
+  cancelAllStockNotifications,
+} from '../../services/notificationService';
 import { useInventory } from '../../hook/useInventory';
-
 
 const PACIENTE_ID_DEMO = 'demo-paciente-001';
 
-const AlertsScreen = ({ onBack, onGoInventory, onGoOffers  }) => {
+const AlertsScreen = ({ settings, onBack, onGoInventory, onGoOffers }) => {
   const { medicines, loading } = useInventory(PACIENTE_ID_DEMO);
+  const { colors, fontSizes } = getTheme(settings);
 
   const getRemainingDays = (item) => {
     const currentStock = Number(item.currentStock || 0);
@@ -98,32 +102,32 @@ const AlertsScreen = ({ onBack, onGoInventory, onGoOffers  }) => {
   ).length;
 
   useEffect(() => {
-  const scheduleAlerts = async () => {
-    if (!alertMedicines.length) {
+    const scheduleAlerts = async () => {
+      if (!alertMedicines.length) {
+        await cancelAllStockNotifications();
+        return;
+      }
+
       await cancelAllStockNotifications();
-      return;
-    }
 
-    await cancelAllStockNotifications();
+      const criticalAlerts = alertMedicines.filter(
+        (item) =>
+          item.alertInfo.title === 'Sin stock' ||
+          item.alertInfo.title === 'Se agota muy pronto' ||
+          item.alertInfo.title === 'Stock crítico'
+      );
 
-    const criticalAlerts = alertMedicines.filter(
-      (item) =>
-        item.alertInfo.title === 'Sin stock' ||
-        item.alertInfo.title === 'Se agota muy pronto' ||
-        item.alertInfo.title === 'Stock crítico'
-    );
+      for (const item of criticalAlerts.slice(0, 3)) {
+        await scheduleStockNotification({
+          title: 'Alerta G-PIM',
+          body: `${item.medicineName || item.name}: ${item.alertInfo.message}`,
+          seconds: 5,
+        });
+      }
+    };
 
-    for (const item of criticalAlerts.slice(0, 3)) {
-      await scheduleStockNotification({
-        title: 'Alerta G-PIM',
-        body: `${item.medicineName || item.name}: ${item.alertInfo.message}`,
-        seconds: 5,
-      });
-    }
-  };
-
-  scheduleAlerts();
-}, [alertMedicines]);
+    scheduleAlerts();
+  }, [alertMedicines]);
 
   const renderItem = ({ item }) => {
     const info = item.alertInfo;
@@ -135,20 +139,39 @@ const AlertsScreen = ({ onBack, onGoInventory, onGoOffers  }) => {
         </View>
 
         <View style={styles.alertContent}>
-          <Text style={styles.medicineName}>{item.name}</Text>
+          <Text
+            style={[
+              styles.medicineName,
+              { fontSize: fontSizes.normal + 4 },
+            ]}
+          >
+            {item.name}
+          </Text>
 
-          <Text style={[styles.alertTitle, { color: info.color }]}>
+          <Text
+            style={[
+              styles.alertTitle,
+              { color: info.color, fontSize: fontSizes.normal },
+            ]}
+          >
             {info.title}
           </Text>
 
-          <Text style={styles.alertMessage}>{info.message}</Text>
+          <Text
+            style={[
+              styles.alertMessage,
+              { fontSize: fontSizes.normal },
+            ]}
+          >
+            {info.message}
+          </Text>
 
           <View style={styles.metaRow}>
-            <Text style={styles.stockText}>
+            <Text style={[styles.stockText, { fontSize: fontSizes.small }]}>
               Stock: {item.currentStock ?? 0}
             </Text>
 
-            <Text style={styles.stockText}>
+            <Text style={[styles.stockText, { fontSize: fontSizes.small }]}>
               Mínimo: {item.minStock ?? 0}
             </Text>
           </View>
@@ -158,13 +181,20 @@ const AlertsScreen = ({ onBack, onGoInventory, onGoOffers  }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.topBar}>
         <TouchableOpacity onPress={onBack}>
-          <Ionicons name="arrow-back" size={24} color="#2D3436" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
 
-        <Text style={styles.logoText}>Alertas</Text>
+        <Text
+          style={[
+            styles.logoText,
+            { color: colors.text, fontSize: fontSizes.header },
+          ]}
+        >
+          Alertas
+        </Text>
 
         <View style={styles.bellBox}>
           <MaterialCommunityIcons
@@ -181,16 +211,33 @@ const AlertsScreen = ({ onBack, onGoInventory, onGoOffers  }) => {
         </View>
       </View>
 
-      <Text style={styles.header}>Alertas de stock</Text>
+      <Text
+        style={[
+          styles.header,
+          { color: colors.text, fontSize: fontSizes.title },
+        ]}
+      >
+        Alertas de stock
+      </Text>
 
-      <Text style={styles.subtitle}>
+      <Text
+        style={[
+          styles.subtitle,
+          { color: colors.secondaryText, fontSize: fontSizes.subtitle },
+        ]}
+      >
         Medicamentos que requieren atención o reposición.
       </Text>
 
       {criticalCount > 0 && (
         <View style={styles.criticalBanner}>
           <Ionicons name="warning" size={22} color="#FFFFFF" />
-          <Text style={styles.criticalBannerText}>
+          <Text
+            style={[
+              styles.criticalBannerText,
+              { fontSize: fontSizes.normal },
+            ]}
+          >
             Tienes {criticalCount} alerta(s) crítica(s) que requieren atención.
           </Text>
         </View>
@@ -199,7 +246,14 @@ const AlertsScreen = ({ onBack, onGoInventory, onGoOffers  }) => {
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" />
-          <Text style={styles.loadingText}>Revisando alertas...</Text>
+          <Text
+            style={[
+              styles.loadingText,
+              { color: colors.secondaryText, fontSize: fontSizes.normal },
+            ]}
+          >
+            Revisando alertas...
+          </Text>
         </View>
       ) : (
         <FlatList
@@ -215,8 +269,20 @@ const AlertsScreen = ({ onBack, onGoInventory, onGoOffers  }) => {
                 size={64}
                 color="#27AE60"
               />
-              <Text style={styles.emptyTitle}>Todo en orden</Text>
-              <Text style={styles.emptyText}>
+              <Text
+                style={[
+                  styles.emptyTitle,
+                  { fontSize: fontSizes.header + 2 },
+                ]}
+              >
+                Todo en orden
+              </Text>
+              <Text
+                style={[
+                  styles.emptyText,
+                  { color: colors.secondaryText, fontSize: fontSizes.normal },
+                ]}
+              >
                 No hay medicamentos con alertas por ahora.
               </Text>
             </View>
@@ -224,35 +290,64 @@ const AlertsScreen = ({ onBack, onGoInventory, onGoOffers  }) => {
         />
       )}
 
-      <View style={styles.bottomNav}>
+      <View style={[styles.bottomNav, { backgroundColor: colors.card }]}>
         <TouchableOpacity style={styles.navItem} onPress={onGoInventory}>
-          <Ionicons name="home-outline" size={24} color="#2D3436" />
-          <Text style={styles.navText}>Inicio</Text>
+          <Ionicons name="home-outline" size={24} color={colors.text} />
+          <Text
+            style={[
+              styles.navText,
+              { color: colors.text, fontSize: fontSizes.small },
+            ]}
+          >
+            Inicio
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.navItem}>
           <Ionicons name="alert-circle" size={24} color="#E74C3C" />
-          <Text style={[styles.navText, { color: '#E74C3C' }]}>Alertas</Text>
+          <Text
+            style={[
+              styles.navText,
+              { color: '#E74C3C', fontSize: fontSizes.small },
+            ]}
+          >
+            Alertas
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.navItem} onPress={onGoOffers}>
           <Ionicons name="cart-outline" size={24} color="#F39C12" />
-          <Text style={[styles.navText, { color: '#F39C12' }]}>Ofertas</Text>
+          <Text
+            style={[
+              styles.navText,
+              { color: '#F39C12', fontSize: fontSizes.small },
+            ]}
+          >
+            Ofertas
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="person-outline" size={24} color="#2D3436" />
-          <Text style={styles.navText}>Perfil</Text>
+          <Ionicons name="person-outline" size={24} color={colors.text} />
+          <Text
+            style={[
+              styles.navText,
+              { color: colors.text, fontSize: fontSizes.small },
+            ]}
+          >
+            Perfil
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 };
 
+export default AlertsScreen;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F7F7',
     paddingHorizontal: 20,
     paddingTop: 55,
   },
@@ -262,9 +357,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoText: {
-    fontSize: 22,
     fontWeight: '800',
-    color: '#2D3436',
   },
   bellBox: {
     position: 'relative',
@@ -287,14 +380,10 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   header: {
-    fontSize: 30,
     fontWeight: 'bold',
-    color: '#2D3436',
     marginTop: 28,
   },
   subtitle: {
-    fontSize: 15,
-    color: '#636E72',
     marginTop: 8,
     marginBottom: 16,
   },
@@ -308,7 +397,6 @@ const styles = StyleSheet.create({
   },
   criticalBannerText: {
     color: '#FFFFFF',
-    fontSize: 14,
     fontWeight: '800',
     marginLeft: 10,
     flex: 1,
@@ -337,17 +425,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   medicineName: {
-    fontSize: 18,
     fontWeight: '800',
     color: '#2D3436',
   },
   alertTitle: {
-    fontSize: 15,
     fontWeight: '800',
     marginTop: 4,
   },
   alertMessage: {
-    fontSize: 14,
     color: '#636E72',
     marginTop: 4,
   },
@@ -357,7 +442,6 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   stockText: {
-    fontSize: 13,
     color: '#4F5D75',
     fontWeight: '700',
   },
@@ -368,7 +452,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 10,
-    color: '#636E72',
     fontWeight: '600',
   },
   emptyContainer: {
@@ -377,14 +460,11 @@ const styles = StyleSheet.create({
     marginTop: 90,
   },
   emptyTitle: {
-    fontSize: 22,
     fontWeight: '800',
     color: '#27AE60',
     marginTop: 14,
   },
   emptyText: {
-    fontSize: 15,
-    color: '#636E72',
     textAlign: 'center',
     marginTop: 6,
   },
@@ -394,7 +474,6 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     height: 75,
-    backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     flexDirection: 'row',
@@ -407,11 +486,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   navText: {
-    fontSize: 11,
     fontWeight: '700',
-    color: '#2D3436',
     marginTop: 3,
   },
 });
-
-export default AlertsScreen;

@@ -7,66 +7,98 @@ import {
   Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { getTheme } from '../../theme/theme';
 
 const SettingsScreen = ({ onBack, settings, onUpdateSettings }) => {
-  const [darkMode, setDarkMode] = useState(false);
-  const [largeText, setLargeText] = useState(false);
   const [notifications, setNotifications] = useState(true);
+  const { colors, fontSizes } = getTheme(settings);
 
   return (
-    <View style={[styles.container,
-        { backgroundColor: settings.darkMode ? '#1E1E1E' : '#F7F7F7' }
-    ]}>
-      
-      {/* HEADER */}
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.topBar}>
         <TouchableOpacity onPress={onBack}>
-          <Ionicons name="arrow-back" size={24} color={settings.darkMode ? '#FFF' : '#2D3436'}  />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
 
-        <Text style={[styles.title,
-            {color: settings.darkMode ? '#FFF' : '#2D3436'}
-        ]}>
-            Ajustes</Text>
+        <Text
+          style={[
+            styles.title,
+            { color: colors.text, fontSize: fontSizes.header },
+          ]}
+        >
+          Ajustes
+        </Text>
 
         <View style={{ width: 24 }} />
       </View>
 
-      {/* OPCIONES */}
-      <View style={styles.card}>
-
-        {/* DARK MODE */}
+      <View
+        style={[
+          styles.card,
+          {
+            backgroundColor: colors.card,
+            borderColor: colors.border,
+          },
+        ]}
+      >
         <View style={styles.row}>
           <View style={styles.rowLeft}>
-            <Ionicons name="moon-outline" size={22} />
-            <Text style={styles.text}>Modo oscuro</Text>
+            <Ionicons name="moon-outline" size={22} color={colors.text} />
+            <Text
+              style={[
+                styles.text,
+                { color: colors.text, fontSize: fontSizes.normal },
+              ]}
+            >
+              Modo oscuro
+            </Text>
           </View>
 
-          <Switch value={settings.darkMode} onValueChange={(value) => onUpdateSettings({ darkMode: value})} />
+          <Switch
+            value={settings.darkMode}
+            onValueChange={(value) => onUpdateSettings({ darkMode: value })}
+          />
         </View>
 
-        {/* TAMAÑO TEXTO */}
         <View style={styles.row}>
           <View style={styles.rowLeft}>
-            <Ionicons name="text-outline" size={22} />
-            <Text style={styles.text}>Texto grande</Text>
+            <Ionicons name="text-outline" size={22} color={colors.text} />
+            <Text
+              style={[
+                styles.text,
+                { color: colors.text, fontSize: fontSizes.normal },
+              ]}
+            >
+              Texto grande
+            </Text>
           </View>
 
-          <Switch value={settings.largeText} onValueChange={(value) => onUpdateSettings({ largeText: value})} />
+          <Switch
+            value={settings.largeText}
+            onValueChange={(value) => onUpdateSettings({ largeText: value })}
+          />
         </View>
 
-        {/* NOTIFICACIONES */}
-        <View style={styles.row}>
+        <View style={styles.rowLast}>
           <View style={styles.rowLeft}>
-            <Ionicons name="notifications-outline" size={22} />
-            <Text style={styles.text}>Notificaciones</Text>
+            <Ionicons
+              name="notifications-outline"
+              size={22}
+              color={colors.text}
+            />
+            <Text
+              style={[
+                styles.text,
+                { color: colors.text, fontSize: fontSizes.normal },
+              ]}
+            >
+              Notificaciones
+            </Text>
           </View>
 
           <Switch value={notifications} onValueChange={setNotifications} />
         </View>
-
       </View>
-
     </View>
   );
 };
@@ -78,7 +110,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     paddingTop: 55,
-    backgroundColor: '#F7F7F7',
   },
   topBar: {
     flexDirection: 'row',
@@ -86,14 +117,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 20,
     fontWeight: '800',
   },
   card: {
     marginTop: 25,
-    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 18,
+    borderWidth: 1,
   },
   row: {
     flexDirection: 'row',
@@ -101,13 +131,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 18,
   },
+  rowLast: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   rowLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   text: {
     marginLeft: 10,
-    fontSize: 15,
     fontWeight: '700',
   },
 });

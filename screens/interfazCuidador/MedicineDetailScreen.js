@@ -12,18 +12,20 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { getTheme } from '../../theme/theme';
 import { useInventory } from '../../hook/useInventory';
 
 const PACIENTE_ID_DEMO = 'demo-paciente-001';
 
-const MedicineDetailScreen = ({ medicine, onBack, onEdit }) => {
+const MedicineDetailScreen = ({ settings, medicine, onBack, onEdit }) => {
   const { deleteMedicine, consumeDose, replenishStock } = useInventory(PACIENTE_ID_DEMO);
+  const { colors, fontSizes } = getTheme(settings);
 
-  const [modalVisible, setModalVisible] = React.useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
   const [amount, setAmount] = useState('');
-
   const [loadingAction, setLoadingAction] = useState(false);
 
+  const inputBackground = colors.isDark ? '#2A2A2A' : '#EFEFEF';
 
   const getRemainingDays = () => {
     const stock = Number(medicine.currentStock || 0);
@@ -40,34 +42,18 @@ const MedicineDetailScreen = ({ medicine, onBack, onEdit }) => {
     const minStock = Number(medicine.minStock || 0);
 
     if (stock <= 0) {
-      return {
-        label: 'Sin stock',
-        color: '#E74C3C',
-        background: '#FDECEC',
-      };
+      return { label: 'Sin stock', color: '#E74C3C', background: '#FDECEC' };
     }
 
     if (stock <= minStock) {
-      return {
-        label: 'Stock crítico',
-        color: '#F39C12',
-        background: '#FFF4E5',
-      };
+      return { label: 'Stock crítico', color: '#F39C12', background: '#FFF4E5' };
     }
 
     if (stock <= minStock * 1.5) {
-      return {
-        label: 'Bajo stock',
-        color: '#D68910',
-        background: '#FFF8E1',
-      };
+      return { label: 'Bajo stock', color: '#D68910', background: '#FFF8E1' };
     }
 
-    return {
-      label: 'Stock suficiente',
-      color: '#27AE60',
-      background: '#EAF8EE',
-    };
+    return { label: 'Stock suficiente', color: '#27AE60', background: '#EAF8EE' };
   };
 
   const getCategoryIcon = () => {
@@ -88,7 +74,6 @@ const MedicineDetailScreen = ({ medicine, onBack, onEdit }) => {
   const getStockPercentage = () => {
     const stock = Number(medicine.currentStock || 0);
     const minStock = Number(medicine.minStock || 1);
-
     const percentage = (stock / minStock) * 100;
 
     return Math.min(Math.max(percentage, 0), 100);
@@ -120,6 +105,11 @@ const MedicineDetailScreen = ({ medicine, onBack, onEdit }) => {
     };
   };
 
+  const remainingDays = getRemainingDays();
+  const status = getStatus();
+  const stockPercentage = getStockPercentage();
+  const stockLevel = getStockLevel();
+
   const getEstimatedDate = () => {
     if (remainingDays === null) return null;
 
@@ -131,11 +121,6 @@ const MedicineDetailScreen = ({ medicine, onBack, onEdit }) => {
       month: 'long',
     });
   };
-
-  const remainingDays = getRemainingDays();
-  const status = getStatus();
-  const stockPercentage = getStockPercentage();
-  const stockLevel = getStockLevel();
 
   const progressAnim = useRef(new Animated.Value(0)).current;
 
@@ -173,42 +158,54 @@ const MedicineDetailScreen = ({ medicine, onBack, onEdit }) => {
   };
 
   const handleReplenish = async () => {
-  if (!amount || isNaN(amount)) {
-    Alert.alert('Error', 'Ingresa una cantidad válida');
-    return;
-  }
+    if (!amount || isNaN(amount)) {
+      Alert.alert('Error', 'Ingresa una cantidad válida');
+      return;
+    }
 
-  setLoadingAction(true);
+    setLoadingAction(true);
 
-  await replenishStock(medicine.id, Number(amount));
+    await replenishStock(medicine.id, Number(amount));
 
-  setLoadingAction(false);
-  setModalVisible(false);
-  setAmount('');
+    setLoadingAction(false);
+    setModalVisible(false);
+    setAmount('');
 
-  Alert.alert('Stock actualizado', 'Se agregó correctamente');
-  onBack();
-};
+    Alert.alert('Stock actualizado', 'Se agregó correctamente');
+    onBack();
+  };
 
   return (
     <ScrollView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.topBar}>
         <TouchableOpacity onPress={onBack}>
-          <Ionicons name="arrow-back" size={24} color="#2D3436" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
 
-        <Text style={styles.title}>{medicine.name}</Text>
+        <Text
+          style={[
+            styles.title,
+            { color: colors.text, fontSize: fontSizes.header },
+          ]}
+        >
+          {medicine.name}
+        </Text>
 
         <TouchableOpacity onPress={onEdit}>
-          <Ionicons name="create-outline" size={24} color="#2D3436" />
+          <Ionicons name="create-outline" size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.mainCard}>
+      <View
+        style={[
+          styles.mainCard,
+          { backgroundColor: colors.card, borderColor: colors.border },
+        ]}
+      >
         <View style={[styles.iconCircle, { borderColor: status.color }]}>
           <MaterialCommunityIcons
             name={getCategoryIcon()}
@@ -218,12 +215,22 @@ const MedicineDetailScreen = ({ medicine, onBack, onEdit }) => {
         </View>
 
         <View style={[styles.statusBadge, { backgroundColor: status.background }]}>
-          <Text style={[styles.statusText, { color: status.color }]}>
+          <Text
+            style={[
+              styles.statusText,
+              { color: status.color, fontSize: fontSizes.normal },
+            ]}
+          >
             {status.label}
           </Text>
         </View>
 
-        <Text style={styles.remainingText}>
+        <Text
+          style={[
+            styles.remainingText,
+            { color: colors.text, fontSize: fontSizes.header - 2 },
+          ]}
+        >
           {remainingDays === null
             ? 'Dosis diaria no definida'
             : remainingDays === 1
@@ -233,7 +240,14 @@ const MedicineDetailScreen = ({ medicine, onBack, onEdit }) => {
 
         <View style={styles.progressContainer}>
           <View style={styles.progressHeader}>
-            <Text style={styles.progressLabel}>Nivel de seguridad del stock</Text>
+            <Text
+              style={[
+                styles.progressLabel,
+                { color: colors.secondaryText, fontSize: fontSizes.normal },
+              ]}
+            >
+              Nivel de seguridad del stock
+            </Text>
 
             <View style={[styles.levelBadge, { backgroundColor: stockLevel.color }]}>
               <Text style={styles.levelBadgeText}>{stockLevel.label}</Text>
@@ -252,7 +266,12 @@ const MedicineDetailScreen = ({ medicine, onBack, onEdit }) => {
             />
           </View>
 
-          <Text style={[styles.progressPercent, { color: stockLevel.color }]}>
+          <Text
+            style={[
+              styles.progressPercent,
+              { color: stockLevel.color, fontSize: fontSizes.normal },
+            ]}
+          >
             {Math.round(stockPercentage)}%
           </Text>
         </View>
@@ -263,35 +282,92 @@ const MedicineDetailScreen = ({ medicine, onBack, onEdit }) => {
             size={20}
             color={stockLevel.color}
           />
-          <Text style={[styles.alertText, { color: stockLevel.color }]}>
+          <Text
+            style={[
+              styles.alertText,
+              { color: stockLevel.color, fontSize: fontSizes.normal },
+            ]}
+          >
             {stockLevel.message}
           </Text>
         </View>
 
         {getEstimatedDate() && (
-          <Text style={styles.estimatedDate}>
+          <Text
+            style={[
+              styles.estimatedDate,
+              { color: colors.secondaryText, fontSize: fontSizes.small },
+            ]}
+          >
             Fecha estimada de agotamiento: {getEstimatedDate()}
           </Text>
         )}
 
-        <Text style={styles.categoryText}>
+        <Text
+          style={[
+            styles.categoryText,
+            { color: colors.secondaryText, fontSize: fontSizes.small },
+          ]}
+        >
           Categoría: {medicine.category || 'No definida'}
         </Text>
 
         <View style={styles.stockRow}>
-          <View style={styles.stockBox}>
-            <Text style={styles.stockNumber}>{medicine.currentStock ?? 0}</Text>
-            <Text style={styles.stockLabel}>Stock actual</Text>
+          <View style={[styles.stockBox, { backgroundColor: colors.background }]}>
+            <Text
+              style={[
+                styles.stockNumber,
+                { color: colors.text, fontSize: fontSizes.header },
+              ]}
+            >
+              {medicine.currentStock ?? 0}
+            </Text>
+            <Text
+              style={[
+                styles.stockLabel,
+                { color: colors.secondaryText, fontSize: fontSizes.small },
+              ]}
+            >
+              Stock actual
+            </Text>
           </View>
 
-          <View style={styles.stockBox}>
-            <Text style={styles.stockNumber}>{medicine.minStock ?? 0}</Text>
-            <Text style={styles.stockLabel}>Stock mínimo</Text>
+          <View style={[styles.stockBox, { backgroundColor: colors.background }]}>
+            <Text
+              style={[
+                styles.stockNumber,
+                { color: colors.text, fontSize: fontSizes.header },
+              ]}
+            >
+              {medicine.minStock ?? 0}
+            </Text>
+            <Text
+              style={[
+                styles.stockLabel,
+                { color: colors.secondaryText, fontSize: fontSizes.small },
+              ]}
+            >
+              Stock mínimo
+            </Text>
           </View>
 
-          <View style={styles.stockBox}>
-            <Text style={styles.stockNumber}>{medicine.dailyDose ?? 0}</Text>
-            <Text style={styles.stockLabel}>Dosis diaria</Text>
+          <View style={[styles.stockBox, { backgroundColor: colors.background }]}>
+            <Text
+              style={[
+                styles.stockNumber,
+                { color: colors.text, fontSize: fontSizes.header },
+              ]}
+            >
+              {medicine.dailyDose ?? 0}
+            </Text>
+            <Text
+              style={[
+                styles.stockLabel,
+                { color: colors.secondaryText, fontSize: fontSizes.small },
+              ]}
+            >
+              Dosis diaria
+            </Text>
           </View>
         </View>
       </View>
@@ -299,68 +375,113 @@ const MedicineDetailScreen = ({ medicine, onBack, onEdit }) => {
       <View style={styles.actions}>
         <TouchableOpacity style={styles.consumeButton} onPress={handleConsumeDose}>
           <Ionicons name="remove-circle-outline" size={22} color="#FFFFFF" />
-          <Text style={styles.primaryButtonText}>Consumir dosis</Text>
+          <Text style={[styles.primaryButtonText, { fontSize: fontSizes.button }]}>
+            Consumir dosis
+          </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.restockButton} onPress={() => setModalVisible(true)}>
+        <TouchableOpacity
+          style={styles.restockButton}
+          onPress={() => setModalVisible(true)}
+        >
           <Ionicons name="add-circle-outline" size={22} color="#FFFFFF" />
-          <Text style={styles.primaryButtonText}>Reponer stock</Text>
+          <Text style={[styles.primaryButtonText, { fontSize: fontSizes.button }]}>
+            Reponer stock
+          </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.editButton} onPress={onEdit}>
-          <Ionicons name="create-outline" size={22} color="#2D3436" />
-          <Text style={styles.secondaryButtonText}>Editar medicamento</Text>
+        <TouchableOpacity
+          style={[
+            styles.editButton,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+          onPress={onEdit}
+        >
+          <Ionicons name="create-outline" size={22} color={colors.text} />
+          <Text
+            style={[
+              styles.secondaryButtonText,
+              { color: colors.text, fontSize: fontSizes.button },
+            ]}
+          >
+            Editar medicamento
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
           <Ionicons name="trash-outline" size={22} color="#FFFFFF" />
-          <Text style={styles.primaryButtonText}>Eliminar medicamento</Text>
+          <Text style={[styles.primaryButtonText, { fontSize: fontSizes.button }]}>
+            Eliminar medicamento
+          </Text>
         </TouchableOpacity>
       </View>
-          <Modal
-      visible={modalVisible}
-      transparent
-      animationType="fade"
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContainer}>
-          
-          <Text style={styles.modalTitle}>Reponer stock</Text>
 
-          <TextInput
-            placeholder="Cantidad a agregar"
-            keyboardType="numeric"
-            value={amount}
-            onChangeText={setAmount}
-            style={styles.input}
-          />
-
-          <View style={styles.modalButtons}>
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={() => setModalVisible(false)}
-            >
-              <Text style={styles.cancelText}>Cancelar</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.confirmButton,
-                      loadingAction && {opacity: 0.6}
+      <Modal visible={modalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.modalContainer,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <Text
+              style={[
+                styles.modalTitle,
+                { color: colors.text, fontSize: fontSizes.header },
               ]}
-              onPress={handleReplenish}
-              disabled={loadingAction}
             >
-              <Text style={styles.confirmText}>
-                {loadingAction ? 'Agregando...' : 'Agregar'}
-                </Text>
-            </TouchableOpacity>
-          </View>
+              Reponer stock
+            </Text>
 
+            <TextInput
+              placeholder="Cantidad a agregar"
+              placeholderTextColor={colors.secondaryText}
+              keyboardType="numeric"
+              value={amount}
+              onChangeText={setAmount}
+              style={[
+                styles.input,
+                {
+                  backgroundColor: inputBackground,
+                  color: colors.text,
+                  borderColor: colors.border,
+                  fontSize: fontSizes.normal,
+                },
+              ]}
+            />
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text
+                  style={[
+                    styles.cancelText,
+                    { color: colors.secondaryText, fontSize: fontSizes.normal },
+                  ]}
+                >
+                  Cancelar
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.confirmButton,
+                  loadingAction && { opacity: 0.6 },
+                ]}
+                onPress={handleReplenish}
+                disabled={loadingAction}
+              >
+                <Text style={[styles.confirmText, { fontSize: fontSizes.normal }]}>
+                  {loadingAction ? 'Agregando...' : 'Agregar'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-      </View>
-    </Modal>
+      </Modal>
     </ScrollView>
-    
   );
 };
 
@@ -369,7 +490,6 @@ export default MedicineDetailScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F7F7',
     paddingHorizontal: 20,
     paddingTop: 55,
   },
@@ -384,17 +504,15 @@ const styles = StyleSheet.create({
   title: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 20,
     fontWeight: '800',
-    color: '#2D3436',
   },
   mainCard: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 28,
     padding: 22,
     alignItems: 'center',
     marginTop: 24,
     elevation: 3,
+    borderWidth: 1,
   },
   iconCircle: {
     width: 145,
@@ -412,13 +530,10 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   statusText: {
-    fontSize: 14,
     fontWeight: '800',
   },
   remainingText: {
-    fontSize: 18,
     fontWeight: '800',
-    color: '#2D3436',
     marginTop: 14,
   },
   progressContainer: {
@@ -431,9 +546,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   progressLabel: {
-    fontSize: 13,
     fontWeight: '800',
-    color: '#636E72',
   },
   levelBadge: {
     paddingHorizontal: 12,
@@ -457,7 +570,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   progressPercent: {
-    fontSize: 13,
     fontWeight: '900',
     marginTop: 8,
     textAlign: 'center',
@@ -473,20 +585,15 @@ const styles = StyleSheet.create({
   alertText: {
     flex: 1,
     marginLeft: 8,
-    fontSize: 13,
     fontWeight: '800',
   },
   estimatedDate: {
     marginTop: 12,
-    fontSize: 13,
-    color: '#636E72',
     fontWeight: '700',
     textAlign: 'center',
   },
   categoryText: {
     marginTop: 8,
-    fontSize: 13,
-    color: '#636E72',
     fontWeight: '700',
   },
   stockRow: {
@@ -497,19 +604,14 @@ const styles = StyleSheet.create({
   },
   stockBox: {
     width: '31%',
-    backgroundColor: '#F7F7F7',
     borderRadius: 18,
     paddingVertical: 14,
     alignItems: 'center',
   },
   stockNumber: {
-    fontSize: 22,
     fontWeight: '900',
-    color: '#2D3436',
   },
   stockLabel: {
-    fontSize: 11,
-    color: '#636E72',
     fontWeight: '700',
     marginTop: 4,
     textAlign: 'center',
@@ -538,7 +640,6 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   editButton: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 18,
     paddingVertical: 15,
     flexDirection: 'row',
@@ -546,9 +647,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#DFE6E9',
   },
-    deleteButton: {
+  deleteButton: {
     backgroundColor: '#E74C3C',
     borderRadius: 18,
     paddingVertical: 15,
@@ -556,71 +656,56 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 30,
-},
+  },
   primaryButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
     fontWeight: '800',
     marginLeft: 8,
   },
   secondaryButtonText: {
-    color: '#2D3436',
-    fontSize: 16,
     fontWeight: '800',
     marginLeft: 8,
   },
   modalOverlay: {
-  flex: 1,
-  backgroundColor: 'rgba(0,0,0,0.4)',
-  justifyContent: 'center',
-  alignItems: 'center',
-},
-
-modalContainer: {
-  width: '85%',
-  backgroundColor: '#FFFFFF',
-  borderRadius: 20,
-  padding: 20,
-},
-
-modalTitle: {
-  fontSize: 18,
-  fontWeight: '800',
-  marginBottom: 15,
-  textAlign: 'center',
-},
-
-input: {
-  borderWidth: 1,
-  borderColor: '#DFE6E9',
-  borderRadius: 12,
-  padding: 12,
-  fontSize: 16,
-  marginBottom: 20,
-},
-
-modalButtons: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-},
-
-cancelButton: {
-  padding: 12,
-},
-
-cancelText: {
-  color: '#636E72',
-  fontWeight: '700',
-},
-
-confirmButton: {
-  backgroundColor: '#2D9CDB',
-  padding: 12,
-  borderRadius: 12,
-},
-
-confirmText: {
-  color: '#FFFFFF',
-  fontWeight: '800',
-},
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '85%',
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+  },
+  modalTitle: {
+    fontWeight: '800',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  cancelButton: {
+    padding: 12,
+  },
+  cancelText: {
+    fontWeight: '700',
+  },
+  confirmButton: {
+    backgroundColor: '#2D9CDB',
+    padding: 12,
+    borderRadius: 12,
+  },
+  confirmText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
 });
