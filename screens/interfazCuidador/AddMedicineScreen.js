@@ -54,6 +54,7 @@ const AddMedicineScreen = ({ settings, onCancel, onSaved, patientId }) => {
       await addMedicine({
         name: name.trim(),
         currentStock: Number(currentStock),
+        initialStock: Number(currentStock),
         minStock: Number(minStock),
         dailyDose: Number(dailyDose),
         category,

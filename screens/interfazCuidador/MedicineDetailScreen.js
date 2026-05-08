@@ -73,37 +73,47 @@ const MedicineDetailScreen = ({ settings, medicine, onBack, onEdit, patientId })
 
   const getStockPercentage = () => {
     const stock = Number(medicine.currentStock || 0);
-    const minStock = Number(medicine.minStock || 1);
-    const percentage = (stock / minStock) * 100;
+    const initialStock = Number(medicine.initialStock || 1);
+    const percentage = (stock / initialStock) * 100;
 
     return Math.min(Math.max(percentage, 0), 100);
   };
 
   const getStockLevel = () => {
-    const percentage = getStockPercentage();
+  const stock = Number(medicine.currentStock || 0);
+  const minStock = Number(medicine.minStock || 0);
+  const percentage = getStockPercentage();
 
-    if (percentage <= 30) {
-      return {
-        label: 'Crítico',
-        color: '#E74C3C',
-        message: 'Nivel peligroso. Se recomienda reponer cuanto antes.',
-      };
-    }
-
-    if (percentage <= 70) {
-      return {
-        label: 'Bajo',
-        color: '#D68910',
-        message: 'Stock bajo. Conviene planificar una reposición.',
-      };
-    }
-
+  if (stock < minStock) {
     return {
-      label: 'Seguro',
-      color: '#27AE60',
-      message: 'Stock en rango seguro.',
+      label: 'Crítico',
+      color: '#E74C3C',
+      message: 'El stock está por debajo del mínimo establecido.',
     };
+  }
+
+  if (stock === minStock) {
+    return {
+      label: 'Bajo',
+      color: '#F39C12',
+      message: 'El stock llegó al mínimo establecido.',
+    };
+  }
+
+  if (percentage <= 50) {
+    return {
+      label: 'Medio',
+      color: '#D68910',
+      message: 'El stock está a la mitad o menos de su capacidad inicial.',
+    };
+  }
+
+  return {
+    label: 'Seguro',
+    color: '#27AE60',
+    message: 'El stock está en un rango seguro.',
   };
+};
 
   const remainingDays = getRemainingDays();
   const status = getStatus();

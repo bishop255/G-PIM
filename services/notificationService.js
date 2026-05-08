@@ -1,60 +1,16 @@
-    import * as Notifications from 'expo-notifications';
-    import * as Device from 'expo-device';
-    import { Platform } from 'react-native';
+// Servicio de notificaciones desactivado temporalmente para evitar errores en Expo Go
 
-    Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-        shouldShowBanner: true,
-        shouldShowList: true,
-        shouldPlaySound: true,
-        shouldSetBadge: false,
-    }),
-    });
+export const setupNotifications = async () => {
+  console.log('Notificaciones desactivadas temporalmente en Expo Go.');
+  return false;
+};
 
-    export const setupNotifications = async () => {
-    if (!Device.isDevice) {
-        console.log('Usa un dispositivo físico para probar notificaciones reales.');
-    }
+export const scheduleStockNotification = async ({ title, body, seconds = 5 }) => {
+  console.log('Notificación omitida:', { title, body, seconds });
+  return null;
+};
 
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-
-    if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
-    }
-
-    if (finalStatus !== 'granted') {
-        console.log('Permiso de notificaciones denegado.');
-        return false;
-    }
-
-    if (Platform.OS === 'android') {
-        await Notifications.setNotificationChannelAsync('stock-alerts', {
-        name: 'Alertas de stock',
-        importance: Notifications.AndroidImportance.HIGH,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#E74C3C',
-        });
-    }
-
-    return true;
-    };
-
-    export const scheduleStockNotification = async ({ title, body, seconds = 5 }) => {
-    return await Notifications.scheduleNotificationAsync({
-        content: {
-        title,
-        body,
-        sound: true,
-        },
-        trigger: {
-        seconds,
-        channelId: 'stock-alerts',
-        },
-    });
-    };
-
-    export const cancelAllStockNotifications = async () => {
-    await Notifications.cancelAllScheduledNotificationsAsync();
-    };
+export const cancelAllStockNotifications = async () => {
+  console.log('Cancelación de notificaciones omitida.');
+  return null;
+};
