@@ -23,6 +23,7 @@ import MedicineDetailScreen from './screens/interfazCuidador/MedicineDetailScree
 import HistoryScreen from './screens/interfazCuidador/HistoryScreen';
 import SettingsScreen from './screens/interfazCuidador/SettingsScreen';
 import ProfileScreen from './screens/interfazCuidador/ProfileScreen';
+import HomeScreen from './screens/interfazAdultoMayor/HomeScreen';
 
 
 
@@ -211,7 +212,7 @@ const handleLogout = async () => {
           if (type === 'admin') {
             setScreen('login'); // Familiar -> login ->
           } else {
-            setScreen('inventory'); // Paciente -> directo
+            setScreen('adultoMayorHome'); // Paciente -> directo
           }
         }}
       />
@@ -261,6 +262,22 @@ const handleLogout = async () => {
 
   //---------- Inicio ----------------
 
+  if (screen === 'adultoMayorHome') {
+  return (
+    <HomeScreen
+      onBack={() => setScreen('select')}
+      onTakeMedicine={() =>
+        Alert.alert('Próximamente', 'Aquí irá la acción de tomar medicamento')
+      }
+      onLowStock={() =>
+        Alert.alert('Próximamente', 'Aquí irá la opción de stock bajo')
+      }
+      onEmergency={() =>
+        Alert.alert('Próximamente', 'Aquí irá la alerta de emergencia')
+      }
+    />
+  );
+}
 
   // Inventario
   if (screen === 'inventory') {
