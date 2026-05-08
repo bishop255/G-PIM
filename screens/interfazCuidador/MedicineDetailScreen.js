@@ -15,10 +15,10 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { getTheme } from '../../theme/theme';
 import { useInventory } from '../../hook/useInventory';
 
-const PACIENTE_ID_DEMO = 'demo-paciente-001';
 
-const MedicineDetailScreen = ({ settings, medicine, onBack, onEdit }) => {
-  const { deleteMedicine, consumeDose, replenishStock } = useInventory(PACIENTE_ID_DEMO);
+
+const MedicineDetailScreen = ({ settings, medicine, onBack, onEdit, patientId }) => {
+  const { deleteMedicine, consumeDose, replenishStock } = useInventory(patientId);
   const { colors, fontSizes } = getTheme(settings);
 
   const [modalVisible, setModalVisible] = useState(false);

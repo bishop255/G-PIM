@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { auth, db } from './database/firebaseConfig';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 import SplashScreen from './screens/SplashScreen';
@@ -30,22 +30,66 @@ export default function App() {
   const [screen, setScreen] = useState('splash');
   const [selectedMedicine, setSelectedMedicine] = useState(null);
   const [settings, setSettings] = useState({ darkMode: false, largeText: false})
+  const [patientId, setPatientId] = useState(null);
 
 useEffect(() => {
 // setupNotifications(); // ⚠️ Activar solo en development build
 
-  const unsubscribe = onAuthStateChanged(auth, (user) => {
-    setTimeout(() => {
+  const unsubscribe = onAuthStateChanged(auth, async (user) => {
+
+    setTimeout(async () => {
+
       if (user) {
-        setScreen('inventory');
+
+        try {
+
+          const userRef = doc(db, 'usuarios', user.uid);
+
+          const userSnap = await getDoc(userRef);
+
+          if (userSnap.exists()) {
+
+            const userData = userSnap.data();
+
+            // Si ya tiene paciente -> inventario
+            if (userData.hasPatient && userData.patientId) {
+              setPatientId(userData.patientId)
+              setScreen('inventory'); 
+            }
+
+            // Si NO tiene paciente -> formulario
+            else {
+              setPatientId(null);
+              setScreen('patientForm');
+            }
+
+          } else {
+
+            setScreen('select');
+
+          }
+
+        } catch (error) {
+
+          console.log(error);
+          setScreen('select');
+
+        }
+
       } else {
+
         setScreen('select');
+
       }
+
     }, 2000);
+
   });
 
   return unsubscribe;
+
 }, []);
+
 
   const updateSettings = (newSettings) => {
     setSettings((prev) => ({
@@ -84,6 +128,8 @@ const handleRegister = async ({ name, email, phone, password, relationship }) =>
       phone: phone.trim(),
       relationship: relationship || 'No definido',
       role: 'cuidador',
+      hasPatient: false,
+      patientId: null,
       createdAt: serverTimestamp(),
     });
 
@@ -117,7 +163,7 @@ const handleLogin = async ({ email, password }) => {
     await signInWithEmailAndPassword(auth, email.trim(), password);
 
     Alert.alert('Bienvenido', 'Inicio de sesión exitoso.');
-    setScreen('inventory');
+    // onAuthStateChanged decidirá si va a inventory o patientForm
     return true;
   } catch (error) {
     console.error('Error iniciando sesión:', error);
@@ -145,6 +191,7 @@ const handleLogout = async () => {
   try {
     await signOut(auth);
     setSelectedMedicine(null)
+    setPatientId(null)
     setScreen('login')
   } catch (error) {
     console.error('Error cerrando sesión', error);
@@ -202,8 +249,11 @@ const handleLogout = async () => {
   // Formulario paciente
   if (screen === 'patientForm') {
     return (
-      <PatientFormScreen
-        onSaved={() => setScreen('inventory')}
+    <PatientFormScreen
+        onSaved={(newPatientId) => {
+          setPatientId(newPatientId);
+          setScreen('inventory');
+        }}
         onCancel={() => setScreen('select')}
       />
     );
@@ -216,6 +266,7 @@ const handleLogout = async () => {
   if (screen === 'inventory') {
     return (
       <InventoryScreen
+        patientId={patientId}
         settings={settings}
         onAddPress={() => setScreen('addMedicine')}
         onEditPress={(medicine) => {
@@ -240,6 +291,7 @@ const handleLogout = async () => {
   if (screen === 'medicineDetail') {
   return (
     <MedicineDetailScreen
+      patientId={patientId}
       settings={settings}
       medicine={selectedMedicine}
       onBack={() => setScreen('inventory')}
@@ -252,6 +304,7 @@ const handleLogout = async () => {
   if (screen === 'addMedicine') {
     return (
       <AddMedicineScreen
+        patientId={patientId}
         settings={settings}
         onCancel={() => setScreen('inventory')}
         onSaved={() => setScreen('inventory')}
@@ -263,6 +316,7 @@ const handleLogout = async () => {
   if (screen === 'editMedicine') {
     return (
       <EditMedicineScreen
+        patientId={patientId}
         settings={settings}
         medicine={selectedMedicine}
         onCancel={() => setScreen('inventory')}
@@ -280,6 +334,7 @@ const handleLogout = async () => {
   if (screen === 'alerts') {
     return (
       <AlertsScreen
+        patientId={patientId}
         settings={settings}
         onBack={() => setScreen('inventory')}
         onGoInventory={() => setScreen('inventory')}
@@ -319,6 +374,7 @@ const handleLogout = async () => {
   if (screen === 'history') {
     return (
       <HistoryScreen
+      patientId={patientId}
       settings={settings}
       onBack={() => setScreen('inventory')}
       />

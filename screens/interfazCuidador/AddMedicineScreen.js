@@ -12,12 +12,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { getTheme } from '../../theme/theme';
 import { useInventory } from '../../hook/useInventory';
 
-const PACIENTE_ID_DEMO = 'demo-paciente-001';
+
 
 const categories = ['Tableta', 'Jarabe', 'Inyección', 'Otro'];
 
-const AddMedicineScreen = ({ settings, onCancel, onSaved }) => {
-  const { addMedicine } = useInventory(PACIENTE_ID_DEMO);
+const AddMedicineScreen = ({ settings, onCancel, onSaved, patientId }) => {
+  const { addMedicine } = useInventory(patientId);
   const { colors, fontSizes } = getTheme(settings);
 
   const [name, setName] = useState('');

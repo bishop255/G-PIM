@@ -12,9 +12,8 @@ import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { getTheme } from '../../theme/theme';
 import { db } from '../../database/firebaseConfig';
 
-const PACIENTE_ID_DEMO = 'demo-paciente-001';
 
-const HistoryScreen = ({ settings, onBack }) => {
+const HistoryScreen = ({ settings, onBack, patientId }) => {
   const [movements, setMovements] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -24,7 +23,7 @@ const HistoryScreen = ({ settings, onBack }) => {
     const movementsRef = collection(
       db,
       'pacientes',
-      PACIENTE_ID_DEMO,
+      patientId,
       'movimientos'
     );
 

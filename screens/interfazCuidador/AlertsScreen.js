@@ -16,10 +16,9 @@ import {
 } from '../../services/notificationService';
 import { useInventory } from '../../hook/useInventory';
 
-const PACIENTE_ID_DEMO = 'demo-paciente-001';
 
-const AlertsScreen = ({ settings, onBack, onGoInventory, onGoOffers, onGoProfile }) => {
-  const { medicines, loading } = useInventory(PACIENTE_ID_DEMO);
+const AlertsScreen = ({ settings, onBack, onGoInventory, onGoOffers, onGoProfile, patientId }) => {
+  const { medicines, loading } = useInventory(patientId);
   const { colors, fontSizes } = getTheme(settings);
 
   const getRemainingDays = (item) => {

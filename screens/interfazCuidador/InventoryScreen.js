@@ -16,7 +16,6 @@ import { getTheme } from '../../theme/theme';
 import { useInventory } from '../../hook/useInventory';
 import SideMenu from '../../components/SideMenu';
 
-const PACIENTE_ID_DEMO = 'demo-paciente-001';
 
 const InventoryScreen = ({ 
   settings, 
@@ -28,12 +27,13 @@ const InventoryScreen = ({
   onHistoryPress, 
   onSettingsPress, 
   onProfilePress,
-  onLogout, 
+  onLogout,
+  patientId,
 }) => {
   const [search, setSearch] = useState('');
   const [menuVisible, setMenuVisible] = useState(false);
 
-  const { medicines, loading, deleteMedicine } = useInventory(PACIENTE_ID_DEMO);
+  const { medicines, loading, deleteMedicine } = useInventory(patientId);
   const { colors, fontSizes } = getTheme(settings);
 
   const confirmDelete = (id) => {
