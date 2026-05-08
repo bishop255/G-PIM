@@ -27,7 +27,8 @@ const InventoryScreen = ({
   onMedicinePress, 
   onHistoryPress, 
   onSettingsPress, 
-  onProfilePress 
+  onProfilePress,
+  onLogout, 
 }) => {
   const [search, setSearch] = useState('');
   const [menuVisible, setMenuVisible] = useState(false);
@@ -355,7 +356,20 @@ const InventoryScreen = ({
             if (screen === 'history') onHistoryPress();
             if (screen === 'profile') onProfilePress();;
             if (screen === 'settings') onSettingsPress();
-            if (screen === 'logout') alert('Próximamente');
+            if (screen === 'logout') {
+              Alert.alert(
+                'Cerrar sesión',
+                '¿Seguro que deseas cerrar sesión?',
+                [
+                  { text: 'Cancelar', style: 'cancel' },
+                  {
+                    text: 'Cerrar sesión',
+                    style: 'destructive',
+                    onPress: onLogout,
+                  },
+                ]
+              );
+            }
           }}
         />
     </View>

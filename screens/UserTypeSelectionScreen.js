@@ -31,7 +31,7 @@ const UserTypeSelectionScreen = ({ onSelect }) => {
             {/* LOGO */}
             <View style={styles.logoContainer}>
                 <Image
-                    source={require('../../assets/logo.png')}
+                    source={require('../assets/logo.png')}
                     style={styles.logo}
                     resizeMode="contain"
                 />
@@ -48,7 +48,7 @@ const UserTypeSelectionScreen = ({ onSelect }) => {
                     onPress={() => onSelect('admin')}
                 >
                     <Image
-                        source={require('../../assets/familia-adoptiva.png')}
+                        source={require('../assets/familia-adoptiva.png')}
                         style={styles.iconImage}
                     />
                     <Text style={styles.optionText}>Familiar</Text>
@@ -60,7 +60,7 @@ const UserTypeSelectionScreen = ({ onSelect }) => {
                     onPress={() => onSelect('patient')}
                 >
                     <Image
-                        source={require('../../assets/paciente.png')}
+                        source={require('../assets/paciente.png')}
                         style={styles.iconImage}
                     />
                     <Text style={styles.optionText}>Paciente</Text>

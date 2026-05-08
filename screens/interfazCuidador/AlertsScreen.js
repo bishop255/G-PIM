@@ -18,7 +18,7 @@ import { useInventory } from '../../hook/useInventory';
 
 const PACIENTE_ID_DEMO = 'demo-paciente-001';
 
-const AlertsScreen = ({ settings, onBack, onGoInventory, onGoOffers }) => {
+const AlertsScreen = ({ settings, onBack, onGoInventory, onGoOffers, onGoProfile }) => {
   const { medicines, loading } = useInventory(PACIENTE_ID_DEMO);
   const { colors, fontSizes } = getTheme(settings);
 
@@ -327,7 +327,7 @@ const AlertsScreen = ({ settings, onBack, onGoInventory, onGoOffers }) => {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem}>
+        <TouchableOpacity style={styles.navItem} onPress={onGoProfile}>
           <Ionicons name="person-outline" size={24} color={colors.text} />
           <Text
             style={[

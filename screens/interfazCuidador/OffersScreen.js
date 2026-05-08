@@ -31,7 +31,7 @@ const mockData = [
   },
 ];
 
-const OffersScreen = ({ settings, onBack, onGoInventory, onGoAlerts }) => {
+const OffersScreen = ({ settings, onBack, onGoInventory, onGoAlerts, onGoProfile }) => {
   const { colors, fontSizes } = getTheme(settings);
 
   const getBestPrice = (prices) => {
@@ -191,7 +191,7 @@ const OffersScreen = ({ settings, onBack, onGoInventory, onGoAlerts }) => {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem}>
+        <TouchableOpacity style={styles.navItem} onPress={onGoProfile}>
           <Ionicons name="person-outline" size={24} color={colors.text} />
           <Text
             style={[
