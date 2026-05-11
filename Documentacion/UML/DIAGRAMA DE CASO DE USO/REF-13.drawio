@@ -1,0 +1,52 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Página-1" id="8HYJrcB6FSiXPGbtsw2W">
+    <mxGraphModel dx="1414" dy="777" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="jzNZ-BoMzt8CtXgXS4MA-3" edge="1" parent="1" source="jzNZ-BoMzt8CtXgXS4MA-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="jzNZ-BoMzt8CtXgXS4MA-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="jzNZ-BoMzt8CtXgXS4MA-1" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="Cuidador" vertex="1">
+          <mxGeometry height="60" width="30" x="90" y="210" as="geometry" />
+        </mxCell>
+        <mxCell id="jzNZ-BoMzt8CtXgXS4MA-5" edge="1" parent="1" source="jzNZ-BoMzt8CtXgXS4MA-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="jzNZ-BoMzt8CtXgXS4MA-4" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="jzNZ-BoMzt8CtXgXS4MA-7" edge="1" parent="1" source="jzNZ-BoMzt8CtXgXS4MA-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="jzNZ-BoMzt8CtXgXS4MA-6" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="jzNZ-BoMzt8CtXgXS4MA-9" edge="1" parent="1" source="jzNZ-BoMzt8CtXgXS4MA-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="jzNZ-BoMzt8CtXgXS4MA-8" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="jzNZ-BoMzt8CtXgXS4MA-11" edge="1" parent="1" source="jzNZ-BoMzt8CtXgXS4MA-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="jzNZ-BoMzt8CtXgXS4MA-10" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="jzNZ-BoMzt8CtXgXS4MA-2" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Comparar precios de medicamentos" vertex="1">
+          <mxGeometry height="80" width="120" x="210" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="jzNZ-BoMzt8CtXgXS4MA-4" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Buscar medicamento" vertex="1">
+          <mxGeometry height="80" width="120" x="380" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="jzNZ-BoMzt8CtXgXS4MA-6" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Consultar proveedores" vertex="1">
+          <mxGeometry height="80" width="120" x="380" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="jzNZ-BoMzt8CtXgXS4MA-8" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Obtener precios" vertex="1">
+          <mxGeometry height="80" width="120" x="550" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="jzNZ-BoMzt8CtXgXS4MA-10" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Mostrar comparación" vertex="1">
+          <mxGeometry height="80" width="120" x="550" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="jzNZ-BoMzt8CtXgXS4MA-12" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="API farmacia" vertex="1">
+          <mxGeometry height="80" width="120" x="210" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="jzNZ-BoMzt8CtXgXS4MA-14" edge="1" parent="1" source="jzNZ-BoMzt8CtXgXS4MA-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="jzNZ-BoMzt8CtXgXS4MA-12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="jzNZ-BoMzt8CtXgXS4MA-13" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="Comparador de ofertas" vertex="1">
+          <mxGeometry height="60" width="30" x="90" y="440" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

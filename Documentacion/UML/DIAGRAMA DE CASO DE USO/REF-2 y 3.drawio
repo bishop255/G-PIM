@@ -1,0 +1,87 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Página-1" id="2jHN2DhL9-yhWB40DzQW">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="Q4YN95DoiyHEPDUBnNCG-1" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="Cuidador" vertex="1">
+          <mxGeometry height="60" width="30" x="100" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="Q4YN95DoiyHEPDUBnNCG-7" edge="1" parent="1" source="Q4YN95DoiyHEPDUBnNCG-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" target="Q4YN95DoiyHEPDUBnNCG-6" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="610" y="170" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="W0Lg32h4AEAq1sdBARv3-2" edge="1" parent="1" source="Q4YN95DoiyHEPDUBnNCG-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="W0Lg32h4AEAq1sdBARv3-1" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="560" y="60" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Q4YN95DoiyHEPDUBnNCG-6" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Inicio sesion" vertex="1">
+          <mxGeometry height="80" width="120" x="380" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="Q4YN95DoiyHEPDUBnNCG-11" edge="1" parent="1" source="Q4YN95DoiyHEPDUBnNCG-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="Q4YN95DoiyHEPDUBnNCG-9" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="130" y="170" as="sourcePoint" />
+            <mxPoint x="470" y="170" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Q4YN95DoiyHEPDUBnNCG-13" edge="1" parent="1" source="Q4YN95DoiyHEPDUBnNCG-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="330" y="60" />
+            </Array>
+            <mxPoint x="330" y="170" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Q4YN95DoiyHEPDUBnNCG-9" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Entrar a la app" vertex="1">
+          <mxGeometry height="80" width="120" x="190" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="Q4YN95DoiyHEPDUBnNCG-12" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Selección de perfil" vertex="1">
+          <mxGeometry height="80" width="120" x="270" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="W0Lg32h4AEAq1sdBARv3-12" edge="1" parent="1" source="W0Lg32h4AEAq1sdBARv3-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="W0Lg32h4AEAq1sdBARv3-11" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="W0Lg32h4AEAq1sdBARv3-1" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Llenar datos del paciente" vertex="1">
+          <mxGeometry height="80" width="120" x="500" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="W0Lg32h4AEAq1sdBARv3-3" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="Actor" vertex="1">
+          <mxGeometry height="60" width="30" x="100" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="W0Lg32h4AEAq1sdBARv3-8" edge="1" parent="1" source="W0Lg32h4AEAq1sdBARv3-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="W0Lg32h4AEAq1sdBARv3-7" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="W0Lg32h4AEAq1sdBARv3-4" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Entrar a la app" vertex="1">
+          <mxGeometry height="70" width="110" x="195" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="W0Lg32h4AEAq1sdBARv3-6" edge="1" parent="1" source="W0Lg32h4AEAq1sdBARv3-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.576;entryDx=0;entryDy=0;entryPerimeter=0;" target="W0Lg32h4AEAq1sdBARv3-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="W0Lg32h4AEAq1sdBARv3-10" edge="1" parent="1" source="W0Lg32h4AEAq1sdBARv3-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="W0Lg32h4AEAq1sdBARv3-9" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="W0Lg32h4AEAq1sdBARv3-7" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Selecciona perfl paciente" vertex="1">
+          <mxGeometry height="70" width="110" x="385" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="SVsPfQ6f8FlGYduWPdnk-2" edge="1" parent="1" source="W0Lg32h4AEAq1sdBARv3-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="SVsPfQ6f8FlGYduWPdnk-1" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="W0Lg32h4AEAq1sdBARv3-9" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Genera QR" vertex="1">
+          <mxGeometry height="70" width="110" x="575" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="SVsPfQ6f8FlGYduWPdnk-3" edge="1" parent="1" source="W0Lg32h4AEAq1sdBARv3-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="SVsPfQ6f8FlGYduWPdnk-1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="W0Lg32h4AEAq1sdBARv3-11" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Escanea QR de paciente" vertex="1">
+          <mxGeometry height="80" width="120" x="640" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="SVsPfQ6f8FlGYduWPdnk-1" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Cuentas vinculadas" vertex="1">
+          <mxGeometry height="70" width="90" x="737" y="210" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
