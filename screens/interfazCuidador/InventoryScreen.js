@@ -29,6 +29,7 @@ const InventoryScreen = ({
   onProfilePress,
   onLogout,
   patientId,
+  onLinkPatientPress,
 }) => {
   const [search, setSearch] = useState('');
   const [menuVisible, setMenuVisible] = useState(false);
@@ -356,6 +357,7 @@ const InventoryScreen = ({
             if (screen === 'history') onHistoryPress();
             if (screen === 'profile') onProfilePress();;
             if (screen === 'settings') onSettingsPress();
+            if (screen === 'linkPatient') onLinkPatientPress();
             if (screen === 'logout') {
               Alert.alert(
                 'Cerrar sesión',

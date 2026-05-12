@@ -26,6 +26,11 @@ import {
 
 const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
+const generateLinkCode = () => {
+    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+    return `GPIM-${random}`;
+};
+
 const PatientFormScreen = ({ onSaved, onCancel }) => {
     const [nombre, setNombre] = useState('');
     const [apellido, setApellido] = useState('');
@@ -125,6 +130,7 @@ const PatientFormScreen = ({ onSaved, onCancel }) => {
 
         const edad = calcularEdad(fechaNacimiento);
         const fechaNacimientoTexto = formatDate(fechaNacimiento);
+        const codigoVinculacion = generateLinkCode();
 
         try {
             setSaving(true);
@@ -140,6 +146,8 @@ const PatientFormScreen = ({ onSaved, onCancel }) => {
                 alergias: alergias.trim(),
 
                 cuidadorId: user.uid,
+                cuidadores: [user.uid],
+                codigoVinculacion,
 
                 createdAt: serverTimestamp(),
             });
@@ -147,6 +155,7 @@ const PatientFormScreen = ({ onSaved, onCancel }) => {
             await updateDoc(doc(db, 'usuarios', user.uid), {
                 hasPatient: true,
                 patientId: patientRef.id,
+                patientIds: [patientRef.id],
             });
 
             Alert.alert(

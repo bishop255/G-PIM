@@ -14,6 +14,11 @@ import RegisterScreen from './screens/Auth/RegisterScreen';
 
 import PatientFormScreen from './screens/interfazAdultoMayor/PatientFormScreen';
 
+import LinkPatientScreen from './screens/interfazAdultoMayor/LinkPatientScreen';
+import HomeScreen from './screens/interfazAdultoMayor/HomeScreen';
+import EmergencyScreen from './screens/interfazAdultoMayor/EmergencyScreen';
+
+
 import InventoryScreen from './screens/interfazCuidador/InventoryScreen';
 import AddMedicineScreen from './screens/interfazCuidador/AddMedicineScreen';
 import EditMedicineScreen from './screens/interfazCuidador/EditMedicineScreen';
@@ -23,8 +28,7 @@ import MedicineDetailScreen from './screens/interfazCuidador/MedicineDetailScree
 import HistoryScreen from './screens/interfazCuidador/HistoryScreen';
 import SettingsScreen from './screens/interfazCuidador/SettingsScreen';
 import ProfileScreen from './screens/interfazCuidador/ProfileScreen';
-import HomeScreen from './screens/interfazAdultoMayor/HomeScreen';
-import EmergencyScreen from './screens/interfazAdultoMayor/EmergencyScreen';
+
 
 
 
@@ -247,7 +251,6 @@ const handleLogout = async () => {
   }
 
 
-
   // Formulario paciente
   if (screen === 'patientForm') {
     return (
@@ -261,7 +264,21 @@ const handleLogout = async () => {
     );
   }
 
-  //---------- Inicio ----------------
+  //---------- Flujo Paciente ----------------
+
+  if (screen === 'linkPatient') {
+  return (
+    <LinkPatientScreen
+      settings={settings}
+      patientId={patientId}
+      onBack={() => setScreen('inventory')}
+      onLinked={(newPatientId) => {
+        setPatientId(newPatientId);
+        setScreen('inventory');
+      }}
+    />
+  );
+}
 
   if (screen === 'adultoMayorHome') {
   return (
@@ -291,6 +308,9 @@ const handleLogout = async () => {
   );
 }
 
+  //---------- Inicio ----------------
+
+
   // Inventario
   if (screen === 'inventory') {
     return (
@@ -312,6 +332,7 @@ const handleLogout = async () => {
         onSettingsPress={() => setScreen('settings')}
         onProfilePress={() => setScreen('profile')}
         onLogout={handleLogout}
+        onLinkPatientPress={() => setScreen('linkPatient')}
       />
     );
   }

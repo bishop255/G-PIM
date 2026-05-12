@@ -107,6 +107,21 @@ const SideMenu = ({ visible, onClose, onNavigate, settings }) => {
             </Text>
           </TouchableOpacity>
 
+          <TouchableOpacity
+            style={styles.item}
+            onPress={() => onNavigate('linkPatient')}
+          >
+            <Ionicons name="qr-code-outline" size={22} color={colors.text} />
+            <Text
+              style={[
+                styles.text,
+                { color: colors.text, fontSize: fontSizes.normal },
+              ]}
+            >
+              Vincular paciente
+            </Text>
+          </TouchableOpacity>
+
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
           <TouchableOpacity
