@@ -139,8 +139,8 @@ const styles = StyleSheet.create({
   },
 
   headerContainer: {
-    marginTop: height * 0.09,
-    marginBottom: height * 0.05,
+    marginTop: height * 0.12,
+    marginBottom: height * 0.035,
     alignItems: 'center',
   },
 
@@ -173,7 +173,8 @@ const styles = StyleSheet.create({
 
   buttonsWrapper: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    marginTop: 0,
   },
 
   actionButton: {

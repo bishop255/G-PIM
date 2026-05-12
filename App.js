@@ -24,6 +24,7 @@ import HistoryScreen from './screens/interfazCuidador/HistoryScreen';
 import SettingsScreen from './screens/interfazCuidador/SettingsScreen';
 import ProfileScreen from './screens/interfazCuidador/ProfileScreen';
 import HomeScreen from './screens/interfazAdultoMayor/HomeScreen';
+import EmergencyScreen from './screens/interfazAdultoMayor/EmergencyScreen';
 
 
 
@@ -272,9 +273,20 @@ const handleLogout = async () => {
       onLowStock={() =>
         Alert.alert('Próximamente', 'Aquí irá la opción de stock bajo')
       }
-      onEmergency={() =>
-        Alert.alert('Próximamente', 'Aquí irá la alerta de emergencia')
+      onEmergency={() => setScreen('adultoMayorEmergency')}
+    />
+  );
+}
+
+  if (screen === 'adultoMayorEmergency') {
+  return (
+    <EmergencyScreen
+      onBack={() => setScreen('adultoMayorHome')}
+      onCallFamily={() =>
+        Alert.alert('Próximamente', 'Aquí irá la llamada al familiar')
       }
+      onSendAlert={() => {}}
+      onCancel={() => setScreen('adultoMayorHome')}
     />
   );
 }
