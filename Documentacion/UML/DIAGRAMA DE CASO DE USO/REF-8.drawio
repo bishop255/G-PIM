@@ -1,0 +1,51 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Página-1" id="Sz7ojHFwG97AAKNctoTw">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="a4zsNXDDpoU3fC2lGVP4-1" edge="1" parent="1" source="9MMpjAfiU3E2lfd_aS8w-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="9MMpjAfiU3E2lfd_aS8w-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="9MMpjAfiU3E2lfd_aS8w-1" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="Cuidador" vertex="1">
+          <mxGeometry height="60" width="30" x="80" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="9MMpjAfiU3E2lfd_aS8w-4" edge="1" parent="1" source="9MMpjAfiU3E2lfd_aS8w-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="9MMpjAfiU3E2lfd_aS8w-3" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="9MMpjAfiU3E2lfd_aS8w-6" edge="1" parent="1" source="9MMpjAfiU3E2lfd_aS8w-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="9MMpjAfiU3E2lfd_aS8w-5" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="620" y="400" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9MMpjAfiU3E2lfd_aS8w-8" edge="1" parent="1" source="9MMpjAfiU3E2lfd_aS8w-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="9MMpjAfiU3E2lfd_aS8w-7" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="450" y="400" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9MMpjAfiU3E2lfd_aS8w-10" edge="1" parent="1" source="9MMpjAfiU3E2lfd_aS8w-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="9MMpjAfiU3E2lfd_aS8w-9" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="9MMpjAfiU3E2lfd_aS8w-2" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Proyectar agotamiento" vertex="1">
+          <mxGeometry height="80" width="120" x="210" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="9MMpjAfiU3E2lfd_aS8w-3" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Obtener stock&lt;div&gt;actual&lt;/div&gt;" vertex="1">
+          <mxGeometry height="80" width="120" x="390" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="9MMpjAfiU3E2lfd_aS8w-5" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Obtener consumo" vertex="1">
+          <mxGeometry height="80" width="120" x="560" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="9MMpjAfiU3E2lfd_aS8w-7" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Calcular días" vertex="1">
+          <mxGeometry height="80" width="120" x="390" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="9MMpjAfiU3E2lfd_aS8w-9" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Estimar fecha" vertex="1">
+          <mxGeometry height="80" width="120" x="560" y="450" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

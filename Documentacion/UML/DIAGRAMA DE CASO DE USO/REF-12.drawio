@@ -1,0 +1,52 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Página-1" id="tvALpKHENjM2aE2zpy3z">
+    <mxGraphModel dx="1414" dy="777" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="5wBGcwvvSxyh8O2gqYuZ-3" edge="1" parent="1" source="5wBGcwvvSxyh8O2gqYuZ-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;" target="5wBGcwvvSxyh8O2gqYuZ-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="5wBGcwvvSxyh8O2gqYuZ-1" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="Paciente" vertex="1">
+          <mxGeometry height="60" width="30" x="90" y="210" as="geometry" />
+        </mxCell>
+        <mxCell id="5wBGcwvvSxyh8O2gqYuZ-5" edge="1" parent="1" source="5wBGcwvvSxyh8O2gqYuZ-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="5wBGcwvvSxyh8O2gqYuZ-4" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="5wBGcwvvSxyh8O2gqYuZ-7" edge="1" parent="1" source="5wBGcwvvSxyh8O2gqYuZ-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="5wBGcwvvSxyh8O2gqYuZ-6" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="5wBGcwvvSxyh8O2gqYuZ-9" edge="1" parent="1" source="5wBGcwvvSxyh8O2gqYuZ-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="5wBGcwvvSxyh8O2gqYuZ-8" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="5wBGcwvvSxyh8O2gqYuZ-12" edge="1" parent="1" source="5wBGcwvvSxyh8O2gqYuZ-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="5wBGcwvvSxyh8O2gqYuZ-11" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="5wBGcwvvSxyh8O2gqYuZ-2" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Realizar llamada de emergencia" vertex="1">
+          <mxGeometry height="80" width="120" x="200" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="5wBGcwvvSxyh8O2gqYuZ-4" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Activar botón de llamada" vertex="1">
+          <mxGeometry height="80" width="120" x="400" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="5wBGcwvvSxyh8O2gqYuZ-6" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Obtener número del cuidador" vertex="1">
+          <mxGeometry height="80" width="120" x="400" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="5wBGcwvvSxyh8O2gqYuZ-8" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Iniciar llamada" vertex="1">
+          <mxGeometry height="80" width="120" x="590" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="5wBGcwvvSxyh8O2gqYuZ-11" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Establecer comunicación" vertex="1">
+          <mxGeometry height="80" width="120" x="590" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="5wBGcwvvSxyh8O2gqYuZ-15" edge="1" parent="1" source="5wBGcwvvSxyh8O2gqYuZ-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="5wBGcwvvSxyh8O2gqYuZ-14">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="5wBGcwvvSxyh8O2gqYuZ-13" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="Cuidador" vertex="1">
+          <mxGeometry height="60" width="30" x="90" y="525" as="geometry" />
+        </mxCell>
+        <mxCell id="5wBGcwvvSxyh8O2gqYuZ-14" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Recibir llamado de emergencia" vertex="1">
+          <mxGeometry height="80" width="120" x="200" y="515" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

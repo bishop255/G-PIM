@@ -1,0 +1,40 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Página-1" id="poGjR-I7I5W1sw4nQv57">
+    <mxGraphModel dx="1414" dy="777" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="scJZEjDvRqDlDSRCmo7A-3" edge="1" parent="1" source="scJZEjDvRqDlDSRCmo7A-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="scJZEjDvRqDlDSRCmo7A-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="scJZEjDvRqDlDSRCmo7A-1" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="Paciente" vertex="1">
+          <mxGeometry height="60" width="30" x="90" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="scJZEjDvRqDlDSRCmo7A-5" edge="1" parent="1" source="scJZEjDvRqDlDSRCmo7A-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="scJZEjDvRqDlDSRCmo7A-4" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="scJZEjDvRqDlDSRCmo7A-7" edge="1" parent="1" source="scJZEjDvRqDlDSRCmo7A-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="scJZEjDvRqDlDSRCmo7A-6" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="scJZEjDvRqDlDSRCmo7A-2" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Enviar alertas de emergencia" vertex="1">
+          <mxGeometry height="80" width="120" x="210" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="scJZEjDvRqDlDSRCmo7A-4" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Activar botón de emergencia" vertex="1">
+          <mxGeometry height="80" width="120" x="380" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="scJZEjDvRqDlDSRCmo7A-6" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Enviar notificación" vertex="1">
+          <mxGeometry height="80" width="120" x="380" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="scJZEjDvRqDlDSRCmo7A-12" edge="1" parent="1" source="scJZEjDvRqDlDSRCmo7A-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="scJZEjDvRqDlDSRCmo7A-11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="scJZEjDvRqDlDSRCmo7A-10" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="Cuidador" vertex="1">
+          <mxGeometry height="60" width="30" x="90" y="440" as="geometry" />
+        </mxCell>
+        <mxCell id="scJZEjDvRqDlDSRCmo7A-11" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Recibir alerta de emergencia" vertex="1">
+          <mxGeometry height="80" width="120" x="210" y="430" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
