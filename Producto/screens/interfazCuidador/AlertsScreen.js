@@ -13,7 +13,7 @@ import { getTheme } from '../../theme/theme';
 import {
   scheduleStockNotification,
   cancelAllStockNotifications,
-} from '../services/notificationService';
+} from '../../services/notificationService';
 import { useInventory } from '../../hook/useInventory';
 
 

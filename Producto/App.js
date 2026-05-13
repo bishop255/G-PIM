@@ -15,6 +15,9 @@ import RegisterScreen from './screens/Auth/RegisterScreen';
 import PatientFormScreen from './screens/interfazAdultoMayor/PatientFormScreen';
 
 import LinkPatientScreen from './screens/interfazAdultoMayor/LinkPatientScreen';
+import PatientQRScreen from './screens/interfazAdultoMayor/PatientQRScreen';
+import PatientWaitingLinkScreen from './screens/interfazAdultoMayor/PatientWaitingLinkScreen';
+
 import HomeScreen from './screens/interfazAdultoMayor/HomeScreen';
 import EmergencyScreen from './screens/interfazAdultoMayor/EmergencyScreen';
 
@@ -37,6 +40,7 @@ export default function App() {
   const [selectedMedicine, setSelectedMedicine] = useState(null);
   const [settings, setSettings] = useState({ darkMode: false, largeText: false})
   const [patientId, setPatientId] = useState(null);
+  const [adultPatientData, setAdultPatientData] = useState(null);
 
 useEffect(() => {
 // setupNotifications(); // ⚠️ Activar solo en development build
@@ -215,9 +219,9 @@ const handleLogout = async () => {
       <UserTypeSelectionScreen
         onSelect={(type) => {
           if (type === 'admin') {
-            setScreen('login'); // Familiar -> login ->
+            setScreen('login'); // Familiar -> login -> Home
           } else {
-            setScreen('adultoMayorHome'); // Paciente -> directo
+            setScreen('patientWaitingLink'); // Paciente -> QR Vinculación -> Home
           }
         }}
       />
@@ -280,9 +284,32 @@ const handleLogout = async () => {
   );
 }
 
+  if (screen === 'patientWaitingLink') {
+  return (
+    <PatientWaitingLinkScreen
+      onBack={() => setScreen('select')}
+      onLinked={({ patientId, patientData }) => {
+        setPatientId(patientId);
+        setAdultPatientData(patientData);
+        setScreen('adultoMayorHome');
+      }}
+    />
+  );
+}
+
+  if (screen === 'patientQR') {
+  return (
+    <PatientQRScreen
+      patientId={patientId}
+      onBack={() => setScreen('select')}
+    />
+  );
+}
+
   if (screen === 'adultoMayorHome') {
   return (
     <HomeScreen
+      patientData={adultPatientData}
       onBack={() => setScreen('select')}
       onTakeMedicine={() =>
         Alert.alert('Próximamente', 'Aquí irá la acción de tomar medicamento')

@@ -1,345 +1,457 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
   Alert,
-  ScrollView,
   ActivityIndicator,
+  Modal,
+  TextInput,
 } from 'react-native';
 
-import QRCode from 'react-native-qrcode-svg';
 import { Ionicons } from '@expo/vector-icons';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 
-import { auth, db } from '../../database/firebaseConfig';
+import { db, auth } from '../../database/firebaseConfig';
 
 import {
-  doc,
-  getDoc,
-  updateDoc,
   collection,
   query,
   where,
   getDocs,
+  doc,
+  updateDoc,
   arrayUnion,
 } from 'firebase/firestore';
 
-import { getTheme } from '../../theme/theme';
+const LinkPatientScreen = ({ onBack, onLinked }) => {
+  const [permission, requestPermission] = useCameraPermissions();
+  const [scanned, setScanned] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [manualVisible, setManualVisible] = useState(false);
+  const [manualCode, setManualCode] = useState('');
 
-const LinkPatientScreen = ({ settings, patientId, onBack, onLinked }) => {
-  const { colors, fontSizes } = getTheme(settings);
+  const linkPatientByCode = async (rawCode) => {
+    if (loading) return;
 
-  const [patientData, setPatientData] = useState(null);
-  const [linkCode, setLinkCode] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [linking, setLinking] = useState(false);
-
-  useEffect(() => {
-    const loadPatient = async () => {
-      try {
-        if (!patientId) {
-          setLoading(false);
-          return;
-        }
-
-        const patientRef = doc(db, 'pacientes', patientId);
-        const patientSnap = await getDoc(patientRef);
-
-        if (patientSnap.exists()) {
-          setPatientData({
-            id: patientSnap.id,
-            ...patientSnap.data(),
-          });
-        }
-      } catch (error) {
-        console.error('Error cargando paciente:', error);
-        Alert.alert('Error', 'No se pudo cargar el paciente.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadPatient();
-  }, [patientId]);
-
-  const handleLinkPatient = async () => {
     const user = auth.currentUser;
+    const code = String(rawCode || '').trim().toUpperCase();
 
     if (!user) {
-      Alert.alert('Error', 'No hay usuario autenticado.');
+      Alert.alert('Error', 'Usuario no autenticado');
+      setScanned(false);
       return;
     }
 
-    if (!linkCode.trim()) {
-      Alert.alert('Código requerido', 'Ingresa un código de vinculación.');
+    if (!code) {
+      Alert.alert('Código requerido', 'Ingresa un código válido.');
       return;
     }
 
     try {
-      setLinking(true);
+      setLoading(true);
 
-      const normalizedCode = linkCode.trim().toUpperCase();
-
-      const patientsRef = collection(db, 'pacientes');
-      const q = query(
-        patientsRef,
-        where('codigoVinculacion', '==', normalizedCode)
+      const patientQuery = query(
+        collection(db, 'pacientes'),
+        where('codigoVinculacion', '==', code)
       );
 
-      const querySnapshot = await getDocs(q);
+      const querySnapshot = await getDocs(patientQuery);
 
       if (querySnapshot.empty) {
-        Alert.alert('No encontrado', 'No existe un paciente con ese código.');
+        Alert.alert(
+          'Código inválido',
+          'No se encontró un paciente con ese código.'
+        );
+        setScanned(false);
         return;
       }
 
       const patientDoc = querySnapshot.docs[0];
-      const linkedPatientId = patientDoc.id;
 
-      await updateDoc(doc(db, 'pacientes', linkedPatientId), {
+      await updateDoc(doc(db, 'pacientes', patientDoc.id), {
         cuidadores: arrayUnion(user.uid),
+        estado: 'vinculado',
       });
 
       await updateDoc(doc(db, 'usuarios', user.uid), {
         hasPatient: true,
-        patientId: linkedPatientId,
-        patientIds: arrayUnion(linkedPatientId),
+        patientId: patientDoc.id,
+        patientIds: arrayUnion(patientDoc.id),
       });
 
-      Alert.alert('Paciente vinculado', 'Ahora tienes acceso a este paciente.');
+      Alert.alert(
+        'Vinculación exitosa',
+        'Paciente vinculado correctamente.'
+      );
 
-      setLinkCode('');
+      setManualVisible(false);
+      setManualCode('');
 
-      if (onLinked) {
-        onLinked(linkedPatientId);
-      }
+      onLinked?.(patientDoc.id);
     } catch (error) {
       console.error('Error vinculando paciente:', error);
+
       Alert.alert('Error', 'No se pudo vincular el paciente.');
+      setScanned(false);
     } finally {
-      setLinking(false);
+      setLoading(false);
     }
   };
 
-  if (loading) {
+  const handleBarCodeScanned = async ({ data }) => {
+    if (scanned || loading) return;
+
+    setScanned(true);
+    await linkPatientByCode(data);
+  };
+
+  if (!permission) {
     return (
-      <View style={[styles.centerContainer, { backgroundColor: colors.background }]}>
+      <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#42B65A" />
-        <Text style={[styles.loadingText, { color: colors.secondaryText }]}>
-          Cargando vinculación...
+        <Text style={styles.subtitle}>Revisando permisos...</Text>
+      </View>
+    );
+  }
+
+  if (!permission.granted) {
+    return (
+      <View style={styles.centerContainer}>
+        <Ionicons name="camera-outline" size={70} color="#42B65A" />
+
+        <Text style={styles.title}>Permiso de cámara</Text>
+
+        <Text style={styles.subtitle}>
+          Necesitamos acceso a la cámara para escanear el QR del paciente.
         </Text>
+
+        <TouchableOpacity style={styles.button} onPress={requestPermission}>
+          <Text style={styles.buttonText}>Permitir cámara</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.manualPermissionButton}
+          onPress={() => setManualVisible(true)}
+        >
+          <Ionicons name="keypad-outline" size={20} color="#42B65A" />
+          <Text style={styles.manualPermissionText}>Escribir código manual</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={onBack}>
+          <Text style={styles.cancelText}>Cancelar</Text>
+        </TouchableOpacity>
+
+        <ManualCodeModal
+          visible={manualVisible}
+          code={manualCode}
+          setCode={setManualCode}
+          loading={loading}
+          onClose={() => setManualVisible(false)}
+          onConfirm={() => linkPatientByCode(manualCode)}
+        />
       </View>
     );
   }
 
   return (
-    <ScrollView
-      contentContainerStyle={[
-        styles.scrollContent,
-        { backgroundColor: colors.background },
-      ]}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.container}>
-        {/* HEADER */}
-        <View style={styles.header}>
+    <View style={styles.container}>
+      <CameraView
+        style={StyleSheet.absoluteFillObject}
+        facing="back"
+        barcodeScannerSettings={{
+          barcodeTypes: ['qr'],
+        }}
+        onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+      />
+
+      <View style={styles.overlay}>
+        <View style={styles.topBar}>
           <TouchableOpacity onPress={onBack}>
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
+            <Ionicons name="arrow-back" size={30} color="#FFFFFF" />
           </TouchableOpacity>
 
-          <Text
-            style={[
-              styles.headerTitle,
-              { color: colors.text, fontSize: fontSizes.header },
-            ]}
-          >
-            Vincular Paciente
-          </Text>
+          <Text style={styles.headerTitle}>Escanear paciente</Text>
 
-          <View style={{ width: 24 }} />
+          <View style={{ width: 30 }} />
         </View>
 
-        {/* QR DEL PACIENTE ACTUAL */}
-        <View
-          style={[
-            styles.card,
-            {
-              backgroundColor: colors.card,
-              borderColor: colors.border,
-            },
-          ]}
-        >
-          <View style={styles.iconCircle}>
-            <Ionicons name="qr-code-outline" size={42} color="#42B65A" />
-          </View>
+        <View style={styles.scanArea}>
+          <View style={styles.scanBox} />
+        </View>
 
-          <Text
-            style={[
-              styles.title,
-              { color: colors.text, fontSize: fontSizes.header },
-            ]}
-          >
-            Código de vinculación
-          </Text>
+        <View style={styles.footer}>
+          <Text style={styles.scanText}>Escanea el QR del paciente</Text>
 
-          <Text
-            style={[
-              styles.subtitle,
-              { color: colors.secondaryText, fontSize: fontSizes.normal },
-            ]}
-          >
-            Comparte este código o QR con otro cuidador para que pueda acceder al paciente.
-          </Text>
-
-          {patientData?.codigoVinculacion ? (
-            <>
-              <View style={styles.qrBox}>
-                <QRCode
-                  value={patientData.codigoVinculacion}
-                  size={190}
-                  backgroundColor="#FFFFFF"
-                  color="#2D3436"
-                />
-              </View>
-
-              <View style={styles.codeBox}>
-                <Text style={styles.codeText}>
-                  {patientData.codigoVinculacion}
-                </Text>
-              </View>
-
-              <Text
-                style={[
-                  styles.patientName,
-                  { color: colors.text, fontSize: fontSizes.normal },
-                ]}
-              >
-                Paciente: {patientData.nombre} {patientData.apellido}
-              </Text>
-            </>
-          ) : (
-            <Text style={[styles.noCodeText, { color: colors.secondaryText }]}>
-              Este paciente aún no tiene código de vinculación.
-            </Text>
+          {loading && (
+            <ActivityIndicator
+              size="large"
+              color="#42B65A"
+              style={{ marginTop: 20 }}
+            />
           )}
-        </View>
 
-        {/* INGRESAR CÓDIGO */}
-        <View
-          style={[
-            styles.card,
-            {
-              backgroundColor: colors.card,
-              borderColor: colors.border,
-            },
-          ]}
-        >
-          <View style={styles.iconCircle}>
-            <Ionicons name="link-outline" size={42} color="#2D9CDB" />
-          </View>
-
-          <Text
-            style={[
-              styles.title,
-              { color: colors.text, fontSize: fontSizes.header },
-            ]}
-          >
-            Vincular con código
-          </Text>
-
-          <Text
-            style={[
-              styles.subtitle,
-              { color: colors.secondaryText, fontSize: fontSizes.normal },
-            ]}
-          >
-            Ingresa el código que te compartió otro cuidador o familiar.
-          </Text>
-
-          <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: colors.isDark ? '#2A2A2A' : '#F1F2F6',
-                color: colors.text,
-                borderColor: colors.border,
-                fontSize: fontSizes.normal,
-              },
-            ]}
-            placeholder="Ej: GPIM-ABC123"
-            placeholderTextColor={colors.secondaryText}
-            autoCapitalize="characters"
-            value={linkCode}
-            onChangeText={setLinkCode}
-          />
+          {scanned && !loading && (
+            <TouchableOpacity
+              style={styles.rescanButton}
+              onPress={() => setScanned(false)}
+            >
+              <Text style={styles.rescanText}>Escanear nuevamente</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
-            style={[styles.linkButton, linking && styles.buttonDisabled]}
-            onPress={handleLinkPatient}
-            disabled={linking}
+            style={styles.manualButton}
+            onPress={() => {
+              setScanned(true);
+              setManualVisible(true);
+            }}
           >
-            <Ionicons name="checkmark-circle" size={22} color="#FFFFFF" />
-
-            <Text style={[styles.linkButtonText, { fontSize: fontSizes.button }]}>
-              {linking ? 'Vinculando...' : 'Vincular paciente'}
-            </Text>
+            <Ionicons name="keypad-outline" size={21} color="#FFFFFF" />
+            <Text style={styles.manualButtonText}>Escribir código manual</Text>
           </TouchableOpacity>
         </View>
       </View>
-    </ScrollView>
+
+      <ManualCodeModal
+        visible={manualVisible}
+        code={manualCode}
+        setCode={setManualCode}
+        loading={loading}
+        onClose={() => {
+          setManualVisible(false);
+          setScanned(false);
+        }}
+        onConfirm={() => linkPatientByCode(manualCode)}
+      />
+    </View>
+  );
+};
+
+const ManualCodeModal = ({
+  visible,
+  code,
+  setCode,
+  loading,
+  onClose,
+  onConfirm,
+}) => {
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalCard}>
+          <View style={styles.modalIcon}>
+            <Ionicons name="keypad-outline" size={38} color="#42B65A" />
+          </View>
+
+          <Text style={styles.modalTitle}>Código manual</Text>
+
+          <Text style={styles.modalSubtitle}>
+            Ingresa el código que aparece en la pantalla del paciente.
+          </Text>
+
+          <TextInput
+            style={styles.modalInput}
+            placeholder="Ej: GPIM-ABC123"
+            placeholderTextColor="#95A5A6"
+            value={code}
+            onChangeText={setCode}
+            autoCapitalize="characters"
+          />
+
+          <View style={styles.modalButtons}>
+            <TouchableOpacity
+              style={styles.modalCancelButton}
+              onPress={onClose}
+              disabled={loading}
+            >
+              <Text style={styles.modalCancelText}>Cancelar</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.modalConfirmButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={onConfirm}
+              disabled={loading}
+            >
+              <Text style={styles.modalConfirmText}>
+                {loading ? 'Vinculando...' : 'Vincular'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
   );
 };
 
 export default LinkPatientScreen;
 
 const styles = StyleSheet.create({
-  scrollContent: {
-    flexGrow: 1,
-  },
-
   container: {
     flex: 1,
+    backgroundColor: '#000',
+  },
+
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'space-between',
+  },
+
+  topBar: {
+    marginTop: 55,
+    paddingHorizontal: 22,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  headerTitle: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '900',
+  },
+
+  scanArea: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  scanBox: {
+    width: 260,
+    height: 260,
+    borderWidth: 4,
+    borderColor: '#42B65A',
+    borderRadius: 28,
+    backgroundColor: 'transparent',
+  },
+
+  footer: {
+    paddingBottom: 70,
+    alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 55,
-    paddingBottom: 40,
+  },
+
+  scanText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '800',
+  },
+
+  rescanButton: {
+    marginTop: 20,
+    backgroundColor: '#42B65A',
+    paddingHorizontal: 22,
+    paddingVertical: 14,
+    borderRadius: 18,
+  },
+
+  rescanText: {
+    color: '#FFFFFF',
+    fontWeight: '900',
+    fontSize: 15,
+  },
+
+  manualButton: {
+    marginTop: 18,
+    borderWidth: 1,
+    borderColor: '#FFFFFF',
+    paddingHorizontal: 20,
+    paddingVertical: 13,
+    borderRadius: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  manualButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '900',
+    marginLeft: 8,
   },
 
   centerContainer: {
     flex: 1,
+    backgroundColor: '#F7F7F7',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 30,
   },
 
-  loadingText: {
-    marginTop: 12,
+  title: {
+    marginTop: 18,
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#2D3436',
+    textAlign: 'center',
+  },
+
+  subtitle: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#636E72',
+    textAlign: 'center',
+    lineHeight: 24,
     fontWeight: '700',
   },
 
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 24,
+  button: {
+    marginTop: 28,
+    backgroundColor: '#42B65A',
+    borderRadius: 18,
+    paddingHorizontal: 28,
+    paddingVertical: 16,
   },
 
-  headerTitle: {
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
     fontWeight: '900',
   },
 
-  card: {
-    borderRadius: 28,
-    padding: 22,
-    marginBottom: 20,
+  manualPermissionButton: {
+    marginTop: 18,
+    flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    elevation: 2,
   },
 
-  iconCircle: {
-    width: 76,
-    height: 76,
+  manualPermissionText: {
+    color: '#42B65A',
+    marginLeft: 8,
+    fontSize: 15,
+    fontWeight: '900',
+  },
+
+  cancelText: {
+    marginTop: 20,
+    color: '#636E72',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+
+  modalCard: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 28,
+    padding: 22,
+    alignItems: 'center',
+  },
+
+  modalIcon: {
+    width: 74,
+    height: 74,
     borderRadius: 24,
     backgroundColor: '#EAF8EE',
     justifyContent: 'center',
@@ -347,79 +459,70 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
 
-  title: {
+  modalTitle: {
+    fontSize: 23,
     fontWeight: '900',
-    textAlign: 'center',
+    color: '#2D3436',
   },
 
-  subtitle: {
-    textAlign: 'center',
+  modalSubtitle: {
     marginTop: 8,
-    marginBottom: 20,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#636E72',
+    textAlign: 'center',
     lineHeight: 20,
-  },
-
-  qrBox: {
-    backgroundColor: '#FFFFFF',
-    padding: 18,
-    borderRadius: 24,
     marginBottom: 18,
   },
 
-  codeBox: {
-    backgroundColor: '#F1F2F6',
-    borderRadius: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    marginBottom: 12,
-  },
-
-  codeText: {
-    color: '#2D3436',
-    fontSize: 20,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-
-  patientName: {
-    marginTop: 4,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-
-  noCodeText: {
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-
-  input: {
+  modalInput: {
     width: '100%',
+    backgroundColor: '#F1F2F6',
     borderRadius: 16,
     paddingHorizontal: 15,
     paddingVertical: 14,
-    borderWidth: 1,
-    fontWeight: '800',
+    fontSize: 17,
+    fontWeight: '900',
+    color: '#2D3436',
     textAlign: 'center',
     letterSpacing: 1,
   },
 
-  linkButton: {
+  modalButtons: {
     width: '100%',
-    marginTop: 18,
-    backgroundColor: '#42B65A',
-    borderRadius: 18,
-    paddingVertical: 16,
     flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 3,
+    justifyContent: 'space-between',
+    marginTop: 20,
   },
 
-  linkButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '900',
+  modalCancelButton: {
+    flex: 1,
+    backgroundColor: '#F1F2F6',
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginRight: 8,
+  },
+
+  modalConfirmButton: {
+    flex: 1,
+    backgroundColor: '#42B65A',
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
     marginLeft: 8,
+  },
+
+  modalCancelText: {
+    color: '#636E72',
+    fontSize: 15,
+    fontWeight: '900',
+  },
+
+  modalConfirmText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '900',
   },
 
   buttonDisabled: {
