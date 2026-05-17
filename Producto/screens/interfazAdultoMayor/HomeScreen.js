@@ -10,12 +10,13 @@ import {
   Dimensions,
   ScrollView,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
 const scale = Math.min(width / 390, 1.15);
 
-const HomeScreen = ({ onBack, onTakeMedicine, onLowStock, onEmergency }) => {
+const HomeScreen = ({ patientData, onTakeMedicine, onLowStock, onEmergency }) => {
+  const patientName = patientData?.nombre || 'Paciente';
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#F2F2F2" />
@@ -25,9 +26,7 @@ const HomeScreen = ({ onBack, onTakeMedicine, onLowStock, onEmergency }) => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.topBar}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={30 * scale} color="#000000" />
-          </TouchableOpacity>
+          <View style={styles.rightSpacer} />
 
           <View style={styles.logoContainer}>
             <Image
@@ -43,11 +42,11 @@ const HomeScreen = ({ onBack, onTakeMedicine, onLowStock, onEmergency }) => {
 
         <View style={styles.headerContainer}>
           <View style={styles.titleRow}>
-            <Text style={styles.title}>HOLA, USUARIO</Text>
-            <Text style={styles.titleIcon}>🧑‍⚕️</Text>
+            <Text style={styles.title}>HOLA, {patientName.toUpperCase()}</Text>
+            <Text style={styles.titleIcon}>👋</Text>
           </View>
 
-          <Text style={styles.subtitle}>¿Que deseas hacer ahora?</Text>
+          <Text style={styles.subtitle}>¿Qué deseas hacer ahora?</Text>
         </View>
 
         <View style={styles.buttonsWrapper}>
@@ -58,7 +57,7 @@ const HomeScreen = ({ onBack, onTakeMedicine, onLowStock, onEmergency }) => {
           >
             <View style={styles.buttonContent}>
               <Text style={styles.buttonEmoji}>💊</Text>
-              <Text style={styles.actionText}>Tome mi{'\n'}medicamento</Text>
+              <Text style={styles.actionText}>Tomé mi{'\n'}medicamento</Text>
             </View>
           </TouchableOpacity>
 
@@ -68,7 +67,7 @@ const HomeScreen = ({ onBack, onTakeMedicine, onLowStock, onEmergency }) => {
             activeOpacity={0.85}
           >
             <View style={styles.buttonContent}>
-              <Text style={styles.buttonEmoji}>💊</Text>
+              <Text style={styles.buttonEmoji}>⚠️</Text>
               <Text style={styles.actionText}>Se acaba mi{'\n'}medicamento</Text>
             </View>
           </TouchableOpacity>
@@ -111,27 +110,21 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
 
-  backButton: {
-    width: 42,
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-  },
-
   logoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
 
   logo: {
-    width: 44 * scale,
-    height: 44 * scale,
+    width: 48 * scale,
+    height: 48 * scale,
     marginRight: 8,
   },
 
   logoText: {
-    fontSize: 21 * scale,
-    fontWeight: '800',
-    color: '#000000',
+    fontSize: 23 * scale,
+    fontWeight: '900',
+    color: '#2D3436',
   },
 
   rightSpacer: {
@@ -152,9 +145,9 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: 32 * scale,
+    fontSize: 30 * scale,
     fontWeight: '900',
-    color: '#000000',
+    color: '#2D3436',
     marginRight: 8,
     textAlign: 'center',
   },
@@ -165,9 +158,9 @@ const styles = StyleSheet.create({
 
   subtitle: {
     marginTop: 12,
-    fontSize: 22 * scale,
-    fontWeight: '700',
-    color: '#000000',
+    fontSize: 21 * scale,
+    fontWeight: '800',
+    color: '#2D3436',
     textAlign: 'center',
   },
 
@@ -192,7 +185,7 @@ const styles = StyleSheet.create({
   },
 
   greenButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#42B65A',
   },
 
   yellowButton: {
@@ -200,7 +193,7 @@ const styles = StyleSheet.create({
   },
 
   redButton: {
-    backgroundColor: '#F00000',
+    backgroundColor: '#E74C3C',
   },
 
   buttonContent: {

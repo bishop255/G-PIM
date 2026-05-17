@@ -22,17 +22,17 @@ import {
   getDocs,
   doc,
   updateDoc,
-  arrayUnion,
+  serverTimestamp,
 } from 'firebase/firestore';
 
-const LinkPatientScreen = ({ onBack, onLinked }) => {
+const LinkPatientScreen = ({ patientId, onBack, onLinked }) => {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
   const [manualVisible, setManualVisible] = useState(false);
   const [manualCode, setManualCode] = useState('');
 
-  const linkPatientByCode = async (rawCode) => {
+  const completeLinkRequestByCode = async (rawCode) => {
     if (loading) return;
 
     const user = auth.currentUser;
@@ -40,6 +40,15 @@ const LinkPatientScreen = ({ onBack, onLinked }) => {
 
     if (!user) {
       Alert.alert('Error', 'Usuario no autenticado');
+      setScanned(false);
+      return;
+    }
+
+    if (!patientId) {
+      Alert.alert(
+        'Paciente no disponible',
+        'Primero debes tener un paciente registrado para conectarlo con la interfaz del adulto mayor.'
+      );
       setScanned(false);
       return;
     }
@@ -52,48 +61,45 @@ const LinkPatientScreen = ({ onBack, onLinked }) => {
     try {
       setLoading(true);
 
-      const patientQuery = query(
-        collection(db, 'pacientes'),
-        where('codigoVinculacion', '==', code)
+      const requestQuery = query(
+        collection(db, 'patientLinkRequests'),
+        where('codigoVinculacion', '==', code),
+        where('estado', '==', 'pendiente')
       );
 
-      const querySnapshot = await getDocs(patientQuery);
+      const querySnapshot = await getDocs(requestQuery);
 
       if (querySnapshot.empty) {
         Alert.alert(
           'Código inválido',
-          'No se encontró un paciente con ese código.'
+          'No se encontró una solicitud pendiente con ese código.'
         );
         setScanned(false);
         return;
       }
 
-      const patientDoc = querySnapshot.docs[0];
+      const requestDoc = querySnapshot.docs[0];
 
-      await updateDoc(doc(db, 'pacientes', patientDoc.id), {
-        cuidadores: arrayUnion(user.uid),
+      await updateDoc(doc(db, 'patientLinkRequests', requestDoc.id), {
         estado: 'vinculado',
-      });
-
-      await updateDoc(doc(db, 'usuarios', user.uid), {
-        hasPatient: true,
-        patientId: patientDoc.id,
-        patientIds: arrayUnion(patientDoc.id),
+        patientId,
+        caregiverId: user.uid,
+        linkedAt: serverTimestamp(),
       });
 
       Alert.alert(
         'Vinculación exitosa',
-        'Paciente vinculado correctamente.'
+        'La interfaz del paciente ya está conectada a este paciente.'
       );
 
       setManualVisible(false);
       setManualCode('');
 
-      onLinked?.(patientDoc.id);
+      onLinked?.(patientId);
     } catch (error) {
-      console.error('Error vinculando paciente:', error);
+      console.error('Error vinculando solicitud:', error);
 
-      Alert.alert('Error', 'No se pudo vincular el paciente.');
+      Alert.alert('Error', 'No se pudo completar la vinculación.');
       setScanned(false);
     } finally {
       setLoading(false);
@@ -104,7 +110,7 @@ const LinkPatientScreen = ({ onBack, onLinked }) => {
     if (scanned || loading) return;
 
     setScanned(true);
-    await linkPatientByCode(data);
+    await completeLinkRequestByCode(data);
   };
 
   if (!permission) {
@@ -149,7 +155,7 @@ const LinkPatientScreen = ({ onBack, onLinked }) => {
           setCode={setManualCode}
           loading={loading}
           onClose={() => setManualVisible(false)}
-          onConfirm={() => linkPatientByCode(manualCode)}
+          onConfirm={() => completeLinkRequestByCode(manualCode)}
         />
       </View>
     );
@@ -172,7 +178,7 @@ const LinkPatientScreen = ({ onBack, onLinked }) => {
             <Ionicons name="arrow-back" size={30} color="#FFFFFF" />
           </TouchableOpacity>
 
-          <Text style={styles.headerTitle}>Escanear paciente</Text>
+          <Text style={styles.headerTitle}>Conectar paciente</Text>
 
           <View style={{ width: 30 }} />
         </View>
@@ -182,7 +188,9 @@ const LinkPatientScreen = ({ onBack, onLinked }) => {
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.scanText}>Escanea el QR del paciente</Text>
+          <Text style={styles.scanText}>
+            Escanea el QR de la interfaz paciente
+          </Text>
 
           {loading && (
             <ActivityIndicator
@@ -223,7 +231,7 @@ const LinkPatientScreen = ({ onBack, onLinked }) => {
           setManualVisible(false);
           setScanned(false);
         }}
-        onConfirm={() => linkPatientByCode(manualCode)}
+        onConfirm={() => completeLinkRequestByCode(manualCode)}
       />
     </View>
   );
@@ -278,7 +286,7 @@ const ManualCodeModal = ({
               disabled={loading}
             >
               <Text style={styles.modalConfirmText}>
-                {loading ? 'Vinculando...' : 'Vincular'}
+                {loading ? 'Conectando...' : 'Conectar'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -340,6 +348,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '800',
+    textAlign: 'center',
   },
 
   rescanButton: {

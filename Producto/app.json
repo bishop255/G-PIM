@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "GPIM-App",
+    "name": "G-PIM",
     "slug": "GPIM-App",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -18,14 +18,23 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#42B65A"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.anonymous.GPIMApp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      "expo-camera",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#42B65A"
+        }
+      ],
       "@react-native-community/datetimepicker"
     ]
   }

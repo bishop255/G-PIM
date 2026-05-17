@@ -3,9 +3,17 @@ import React, { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { auth, db } from './database/firebaseConfig';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, addDoc, collection ,serverTimestamp } from 'firebase/firestore';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { scheduleSnoozeReminder, setupNotifications } from './services/notificationService';
+import * as Notifications from 'expo-notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { registerMedicineDoseTaken } from './services/medicineTakenService';
+
+
+
+// Importación de pantallas
 import SplashScreen from './screens/SplashScreen';
 import UserTypeSelectionScreen from './screens/UserTypeSelectionScreen';
 
@@ -13,15 +21,13 @@ import LoginScreen from './screens/Auth/LoginScreen';
 import RegisterScreen from './screens/Auth/RegisterScreen';
 
 import PatientFormScreen from './screens/interfazAdultoMayor/PatientFormScreen';
-
-import LinkPatientScreen from './screens/interfazAdultoMayor/LinkPatientScreen';
 import PatientQRScreen from './screens/interfazAdultoMayor/PatientQRScreen';
 import PatientWaitingLinkScreen from './screens/interfazAdultoMayor/PatientWaitingLinkScreen';
 
 import HomeScreen from './screens/interfazAdultoMayor/HomeScreen';
 import EmergencyScreen from './screens/interfazAdultoMayor/EmergencyScreen';
 
-
+import LinkPatientScreen from './screens/interfazCuidador/LinkPatientScreen';
 import InventoryScreen from './screens/interfazCuidador/InventoryScreen';
 import AddMedicineScreen from './screens/interfazCuidador/AddMedicineScreen';
 import EditMedicineScreen from './screens/interfazCuidador/EditMedicineScreen';
@@ -42,29 +48,70 @@ export default function App() {
   const [patientId, setPatientId] = useState(null);
   const [adultPatientData, setAdultPatientData] = useState(null);
 
+  useEffect(() => {
+  const subscription = Notifications.addNotificationResponseReceivedListener(
+    async (response) => {
+      const actionId = response.actionIdentifier;
+      const data = response.notification.request.content.data;
+
+      const medicineId = data?.medicineId;
+      const medicineName = data?.medicineName || 'tu medicamento';
+
+      if (!medicineId || !patientId) return;
+
+      // Usuario tocó "Avisarme en 5 min" 
+      if (actionId === 'SNOOZE_5') {
+        await scheduleSnoozeReminder({
+          medicineId,
+          medicineName,
+        });
+
+        return;
+      }
+
+      // Usuario tocó "Ya la tomé"
+      if (actionId === 'TAKEN') {
+        const scheduleIndex = Number(data?.scheduleIndex ?? 0);
+
+        const result = await registerMedicineDoseTaken({
+          patientId,
+          medicineId,
+          scheduleIndex,
+          source: 'notification',
+          allowOutsideWindow: true,
+        });
+
+        if (!result.ok) {
+          console.log('No se pudo registrar la dosis:', result.message);
+        }
+      }
+    }
+  );
+
+  return () => {
+    subscription.remove();
+  };
+}, [patientId]);
+
 useEffect(() => {
-// setupNotifications(); // ⚠️ Activar solo en development build
+  // setupNotifications(); // ⚠️ Se activa cuando hay usuario autenticado
 
   const unsubscribe = onAuthStateChanged(auth, async (user) => {
-
     setTimeout(async () => {
-
       if (user) {
+        await setupNotifications();
 
         try {
-
           const userRef = doc(db, 'usuarios', user.uid);
-
           const userSnap = await getDoc(userRef);
 
           if (userSnap.exists()) {
-
             const userData = userSnap.data();
 
             // Si ya tiene paciente -> inventario
             if (userData.hasPatient && userData.patientId) {
-              setPatientId(userData.patientId)
-              setScreen('inventory'); 
+              setPatientId(userData.patientId);
+              setScreen('inventory');
             }
 
             // Si NO tiene paciente -> formulario
@@ -72,32 +119,44 @@ useEffect(() => {
               setPatientId(null);
               setScreen('patientForm');
             }
-
           } else {
-
             setScreen('select');
-
           }
-
         } catch (error) {
-
           console.log(error);
           setScreen('select');
-
         }
-
       } else {
+        try {
+          const savedAdultPatientId = await AsyncStorage.getItem('adultPatientId');
 
-        setScreen('select');
+          if (savedAdultPatientId) {
+            const patientRef = doc(db, 'pacientes', savedAdultPatientId);
+            const patientSnap = await getDoc(patientRef);
 
+            if (patientSnap.exists()) {
+              setPatientId(savedAdultPatientId);
+              setAdultPatientData({
+                id: patientSnap.id,
+                ...patientSnap.data(),
+              });
+              setScreen('adultoMayorHome');
+            } else {
+              await AsyncStorage.removeItem('adultPatientId');
+              setScreen('select');
+            }
+          } else {
+            setScreen('select');
+          }
+        } catch (error) {
+          console.log('Error cargando paciente guardado:', error);
+          setScreen('select');
+        }
       }
-
     }, 2000);
-
   });
 
   return unsubscribe;
-
 }, []);
 
 
@@ -276,8 +335,8 @@ const handleLogout = async () => {
       settings={settings}
       patientId={patientId}
       onBack={() => setScreen('inventory')}
-      onLinked={(newPatientId) => {
-        setPatientId(newPatientId);
+      onLinked={() => {
+        Alert.alert('Vinculación exitosa', 'El paciente ya está conectado.');
         setScreen('inventory');
       }}
     />
@@ -288,7 +347,8 @@ const handleLogout = async () => {
   return (
     <PatientWaitingLinkScreen
       onBack={() => setScreen('select')}
-      onLinked={({ patientId, patientData }) => {
+      onLinked={async ({ patientId, patientData }) => {
+        await AsyncStorage.setItem('adultPatientId', patientId);
         setPatientId(patientId);
         setAdultPatientData(patientData);
         setScreen('adultoMayorHome');
