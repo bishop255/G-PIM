@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,29 +6,95 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
+
 import { Ionicons } from '@expo/vector-icons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { getTheme } from '../../theme/theme';
+
 import {
-  scheduleStockNotification,
-  cancelAllStockNotifications,
-} from '../services/notificationService';
+  collection,
+  onSnapshot,
+  query,
+  orderBy,
+  limit,
+  doc,
+  updateDoc,
+} from 'firebase/firestore';
+
+import { getTheme } from '../../theme/theme';
 import { useInventory } from '../../hook/useInventory';
+import { auth, db } from '../../database/firebaseConfig';
 
-
-const AlertsScreen = ({ settings, onBack, onGoInventory, onGoOffers, onGoProfile, patientId }) => {
+const AlertsScreen = ({
+  settings,
+  onBack,
+  onGoInventory,
+  onGoOffers,
+  onGoProfile,
+  patientId,
+}) => {
   const { medicines, loading } = useInventory(patientId);
   const { colors, fontSizes } = getTheme(settings);
+
+  const [caregiverAlerts, setCaregiverAlerts] = useState([]);
+  const [markingRead, setMarkingRead] = useState(false);
+
+  useEffect(() => {
+    const user = auth.currentUser;
+
+    if (!user) return;
+
+    const alertsRef = collection(db, 'usuarios', user.uid, 'alertas');
+
+    const alertsQuery = query(
+      alertsRef,
+      orderBy('createdAt', 'desc'),
+      limit(30)
+    );
+
+    const unsubscribe = onSnapshot(
+      alertsQuery,
+      (snapshot) => {
+        const list = snapshot.docs.map((docItem) => ({
+          id: docItem.id,
+          ...docItem.data(),
+        }));
+
+        setCaregiverAlerts(list.filter((item) => item.read !== true));
+      },
+      (error) => {
+        console.error('Error obteniendo alertas del cuidador:', error);
+      }
+    );
+
+    return unsubscribe;
+  }, []);
 
   const getRemainingDays = (item) => {
     const currentStock = Number(item.currentStock || 0);
     const dailyDose = Number(item.dailyDose || 0);
+    const doseAmount = Number(item.doseAmount || 1);
+
+    const dailyConsumption = dailyDose * doseAmount;
 
     if (currentStock <= 0) return 0;
-    if (dailyDose <= 0) return null;
+    if (dailyConsumption <= 0) return null;
 
-    return Math.floor(currentStock / dailyDose);
+    return Math.floor(currentStock / dailyConsumption);
+  };
+
+  const getStockUnit = (item) => item.stockUnit || 'unidad';
+
+  const formatDateTime = (timestamp) => {
+    if (!timestamp?.toDate) return 'recién';
+
+    return timestamp.toDate().toLocaleString('es-CL', {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   const getAlertInfo = (item) => {
@@ -39,7 +105,7 @@ const AlertsScreen = ({ settings, onBack, onGoInventory, onGoOffers, onGoProfile
     if (currentStock <= 0) {
       return {
         title: 'Sin stock',
-        message: 'Este medicamento ya no tiene unidades disponibles.',
+        message: `Este medicamento ya no tiene ${getStockUnit(item)} disponibles.`,
         color: '#E74C3C',
         background: '#FDECEC',
         icon: 'alert-circle',
@@ -50,7 +116,7 @@ const AlertsScreen = ({ settings, onBack, onGoInventory, onGoOffers, onGoProfile
     if (remainingDays !== null && remainingDays <= 2) {
       return {
         title: 'Se agota muy pronto',
-        message: `Quedan ${remainingDays} días de stock.`,
+        message: `Quedan ${remainingDays} día(s) de stock.`,
         color: '#E74C3C',
         background: '#FDECEC',
         icon: 'alert-circle',
@@ -72,7 +138,7 @@ const AlertsScreen = ({ settings, onBack, onGoInventory, onGoOffers, onGoProfile
     if (remainingDays !== null && remainingDays <= 5) {
       return {
         title: 'Reposición preventiva',
-        message: `Quedan ${remainingDays} días de stock. Conviene reponer pronto.`,
+        message: `Quedan ${remainingDays} día(s) de stock. Conviene reponer pronto.`,
         color: '#D68910',
         background: '#FFF8E1',
         icon: 'time-outline',
@@ -83,7 +149,7 @@ const AlertsScreen = ({ settings, onBack, onGoInventory, onGoOffers, onGoProfile
     return null;
   };
 
-  const alertMedicines = useMemo(() => {
+  const stockAlerts = useMemo(() => {
     return medicines
       .map((item) => ({
         ...item,
@@ -91,50 +157,114 @@ const AlertsScreen = ({ settings, onBack, onGoInventory, onGoOffers, onGoProfile
         remainingDays: getRemainingDays(item),
       }))
       .filter((item) => item.alertInfo !== null)
-      .sort((a, b) => a.alertInfo.priority - b.alertInfo.priority);
+      .map((item) => ({
+        id: `stock-${item.id}`,
+        type: 'stock',
+        medicineName: item.name,
+        title: item.alertInfo.title,
+        message: item.alertInfo.message,
+        detail: `Stock: ${item.currentStock ?? 0} ${getStockUnit(item)} · Mínimo: ${item.minStock ?? 0} ${getStockUnit(item)}`,
+        color: item.alertInfo.color,
+        background: item.alertInfo.background,
+        icon: item.alertInfo.icon,
+        priority: item.alertInfo.priority,
+      }))
+      .sort((a, b) => a.priority - b.priority);
   }, [medicines]);
 
-  const criticalCount = alertMedicines.filter(
+  const eventAlerts = useMemo(() => {
+    return caregiverAlerts.map((item) => {
+      if (item.type === 'medicine_missed') {
+        return {
+          id: `event-${item.id}`,
+          rawId: item.id,
+          type: 'event',
+          eventType: 'medicine_missed',
+          title: 'Dosis omitida',
+          medicineName: item.medicineName || 'Medicamento',
+          message:
+            item.message ||
+            `${item.patientName || 'El paciente'} no registró ${item.medicineName || 'el medicamento'}.`,
+          detail: `Horario: ${item.scheduledTime || '--:--'} · ${formatDateTime(item.createdAt)}`,
+          color: '#E74C3C',
+          background: '#FDECEC',
+          icon: 'close-circle',
+          priority: 1,
+        };
+      }
+
+      return {
+        id: `event-${item.id}`,
+        rawId: item.id,
+        type: 'event',
+        eventType: 'medicine_taken',
+        title: 'Medicamento tomado',
+        medicineName: item.medicineName || 'Medicamento',
+        message:
+          item.message ||
+          `${item.patientName || 'El paciente'} tomó ${item.medicineName || 'el medicamento'}.`,
+        detail: `Horario: ${item.scheduledTime || '--:--'} · ${formatDateTime(item.createdAt)}`,
+        color: '#27AE60',
+        background: '#EAF8EE',
+        icon: 'checkmark-circle',
+        priority: 5,
+      };
+    });
+  }, [caregiverAlerts]);
+
+  const allAlerts = useMemo(() => {
+    return [...stockAlerts, ...eventAlerts].sort(
+      (a, b) => a.priority - b.priority
+    );
+  }, [stockAlerts, eventAlerts]);
+
+  const criticalCount = stockAlerts.filter(
     (item) =>
-      item.alertInfo.title === 'Sin stock' ||
-      item.alertInfo.title === 'Se agota muy pronto'
+      item.title === 'Sin stock' ||
+      item.title === 'Se agota muy pronto'
   ).length;
 
-  useEffect(() => {
-    const scheduleAlerts = async () => {
-      if (!alertMedicines.length) {
-        await cancelAllStockNotifications();
-        return;
-      }
+  const handleMarkEventsAsRead = async () => {
+    const user = auth.currentUser;
 
-      await cancelAllStockNotifications();
+    if (!user || caregiverAlerts.length === 0) return;
 
-      const criticalAlerts = alertMedicines.filter(
-        (item) =>
-          item.alertInfo.title === 'Sin stock' ||
-          item.alertInfo.title === 'Se agota muy pronto' ||
-          item.alertInfo.title === 'Stock crítico'
-      );
+    Alert.alert(
+      'Marcar eventos como leídos',
+      'Se ocultarán las alertas de tomas y dosis omitidas ya revisadas. Las alertas de stock seguirán visibles hasta que repongas stock.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Marcar como leídas',
+          onPress: async () => {
+            try {
+              setMarkingRead(true);
 
-      for (const item of criticalAlerts.slice(0, 3)) {
-        await scheduleStockNotification({
-          title: 'Alerta G-PIM',
-          body: `${item.medicineName || item.name}: ${item.alertInfo.message}`,
-          seconds: 5,
-        });
-      }
-    };
-
-    scheduleAlerts();
-  }, [alertMedicines]);
+              for (const item of caregiverAlerts) {
+                await updateDoc(
+                  doc(db, 'usuarios', user.uid, 'alertas', item.id),
+                  {
+                    read: true,
+                  }
+                );
+              }
+            } catch (error) {
+              console.error('Error marcando alertas como leídas:', error);
+              Alert.alert('Error', 'No se pudieron marcar las alertas.');
+            } finally {
+              setMarkingRead(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const renderItem = ({ item }) => {
-    const info = item.alertInfo;
-
     return (
-      <View style={[styles.alertCard, { backgroundColor: info.background }]}>
-        <View style={[styles.iconBox, { borderColor: info.color }]}>
-          <Ionicons name={info.icon} size={30} color={info.color} />
+      <View style={[styles.alertCard, { backgroundColor: item.background }]}>
+        <View style={[styles.iconBox, { borderColor: item.color }]}>
+          <Ionicons name={item.icon} size={30} color={item.color} />
         </View>
 
         <View style={styles.alertContent}>
@@ -144,16 +274,16 @@ const AlertsScreen = ({ settings, onBack, onGoInventory, onGoOffers, onGoProfile
               { fontSize: fontSizes.normal + 4 },
             ]}
           >
-            {item.name}
+            {item.medicineName}
           </Text>
 
           <Text
             style={[
               styles.alertTitle,
-              { color: info.color, fontSize: fontSizes.normal },
+              { color: item.color, fontSize: fontSizes.normal },
             ]}
           >
-            {info.title}
+            {item.title}
           </Text>
 
           <Text
@@ -162,18 +292,12 @@ const AlertsScreen = ({ settings, onBack, onGoInventory, onGoOffers, onGoProfile
               { fontSize: fontSizes.normal },
             ]}
           >
-            {info.message}
+            {item.message}
           </Text>
 
-          <View style={styles.metaRow}>
-            <Text style={[styles.stockText, { fontSize: fontSizes.small }]}>
-              Stock: {item.currentStock ?? 0}
-            </Text>
-
-            <Text style={[styles.stockText, { fontSize: fontSizes.small }]}>
-              Mínimo: {item.minStock ?? 0}
-            </Text>
-          </View>
+          <Text style={[styles.stockText, { fontSize: fontSizes.small }]}>
+            {item.detail}
+          </Text>
         </View>
       </View>
     );
@@ -202,9 +326,9 @@ const AlertsScreen = ({ settings, onBack, onGoInventory, onGoOffers, onGoProfile
             color="#E74C3C"
           />
 
-          {alertMedicines.length > 0 && (
+          {allAlerts.length > 0 && (
             <View style={styles.badge}>
-              <Text style={styles.badgeText}>{alertMedicines.length}</Text>
+              <Text style={styles.badgeText}>{allAlerts.length}</Text>
             </View>
           )}
         </View>
@@ -216,7 +340,7 @@ const AlertsScreen = ({ settings, onBack, onGoInventory, onGoOffers, onGoProfile
           { color: colors.text, fontSize: fontSizes.title },
         ]}
       >
-        Alertas de stock
+        Centro de alertas
       </Text>
 
       <Text
@@ -225,8 +349,21 @@ const AlertsScreen = ({ settings, onBack, onGoInventory, onGoOffers, onGoProfile
           { color: colors.secondaryText, fontSize: fontSizes.subtitle },
         ]}
       >
-        Medicamentos que requieren atención o reposición.
+        Stock activo y eventos médicos no leídos.
       </Text>
+
+      {eventAlerts.length > 0 && (
+        <TouchableOpacity
+          style={styles.markReadButton}
+          onPress={handleMarkEventsAsRead}
+          disabled={markingRead}
+        >
+          <Ionicons name="checkmark-done-outline" size={21} color="#FFFFFF" />
+          <Text style={styles.markReadText}>
+            {markingRead ? 'Marcando...' : 'Marcar eventos como leídos'}
+          </Text>
+        </TouchableOpacity>
+      )}
 
       {criticalCount > 0 && (
         <View style={styles.criticalBanner}>
@@ -237,7 +374,7 @@ const AlertsScreen = ({ settings, onBack, onGoInventory, onGoOffers, onGoProfile
               { fontSize: fontSizes.normal },
             ]}
           >
-            Tienes {criticalCount} alerta(s) crítica(s) que requieren atención.
+            Tienes {criticalCount} alerta(s) crítica(s) de stock.
           </Text>
         </View>
       )}
@@ -256,7 +393,7 @@ const AlertsScreen = ({ settings, onBack, onGoInventory, onGoOffers, onGoProfile
         </View>
       ) : (
         <FlatList
-          data={alertMedicines}
+          data={allAlerts}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           showsVerticalScrollIndicator={false}
@@ -282,7 +419,7 @@ const AlertsScreen = ({ settings, onBack, onGoInventory, onGoOffers, onGoProfile
                   { color: colors.secondaryText, fontSize: fontSizes.normal },
                 ]}
               >
-                No hay medicamentos con alertas por ahora.
+                No hay alertas pendientes por ahora.
               </Text>
             </View>
           }
@@ -386,6 +523,22 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 16,
   },
+  markReadButton: {
+    backgroundColor: '#42B65A',
+    borderRadius: 16,
+    paddingVertical: 13,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  markReadText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '900',
+    marginLeft: 8,
+  },
   criticalBanner: {
     backgroundColor: '#E74C3C',
     borderRadius: 16,
@@ -435,14 +588,10 @@ const styles = StyleSheet.create({
     color: '#636E72',
     marginTop: 4,
   },
-  metaRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 6,
-  },
   stockText: {
     color: '#4F5D75',
     fontWeight: '700',
+    marginTop: 6,
   },
   loadingContainer: {
     alignItems: 'center',

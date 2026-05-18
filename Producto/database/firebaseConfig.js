@@ -32,4 +32,4 @@ export const auth = initializeAuth(app, {
 });
 
 // FIRESTORE
-export const db = getFirestore(app)
+export const db = getFirestore(app);

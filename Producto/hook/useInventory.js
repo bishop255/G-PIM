@@ -10,6 +10,10 @@ import {
   getDoc,
   serverTimestamp,
 } from 'firebase/firestore';
+import {
+  scheduleMedicineReminders,
+  cancelMedicineReminders,
+} from '../services/notificationService';
 
 export const useInventory = (pacienteId) => {
   const [medicines, setMedicines] = useState([]);
@@ -139,13 +143,30 @@ const replenishStock = async (medicineId, amount) => {
     try {
       const inventoryRef = collection(db, 'pacientes', pacienteId, 'inventario');
 
-      await addDoc(inventoryRef, {
+      const medicineRef = await addDoc(inventoryRef, {
         ...medicineData,
         currentStock: Number(medicineData.currentStock) || 0,
         minStock: Number(medicineData.minStock) || 0,
         dailyDose: Number(medicineData.dailyDose) || 0,
+        notificationIds: [],
         lastUpdated: serverTimestamp(),
       });
+
+     // if (
+      //  medicineData.reminderEnabled &&
+      //  Array.isArray(medicineData.schedules) &&
+      //  medicineData.schedules.length > 0
+     // ) {
+      //  const notificationIds = await scheduleMedicineReminders({
+      //    medicineId: medicineRef.id,
+      //    medicineName: medicineData.name,
+      //    schedules: medicineData.schedules,
+      //  });
+
+      //  await updateDoc(medicineRef, {
+        //  notificationIds,
+       // });
+     // }
     } catch (error) {
       console.error('Error agregando medicina:', error);
     }
@@ -157,8 +178,35 @@ const replenishStock = async (medicineId, amount) => {
     try {
       const medicineRef = doc(db, 'pacientes', pacienteId, 'inventario', medicineId);
 
+      const medicineSnap = await getDoc(medicineRef);
+
+      if (!medicineSnap.exists()) return;
+
+      const currentMedicineData = medicineSnap.data();
+
+      // Cancelar notificaciones anteriores si existían
+      if (Array.isArray(currentMedicineData.notificationIds)) {
+        await cancelMedicineReminders(currentMedicineData.notificationIds);
+      }
+
+      let notificationIds = [];
+
+      // Reprogramar notificaciones nuevas si el recordatorio está activo
+      if (
+        updateData.reminderEnabled &&
+        Array.isArray(updateData.schedules) &&
+        updateData.schedules.length > 0
+      ) {
+        notificationIds = await scheduleMedicineReminders({
+          medicineId,
+          medicineName: updateData.name || currentMedicineData.name,
+          schedules: updateData.schedules,
+        });
+      }
+
       await updateDoc(medicineRef, {
         ...updateData,
+        notificationIds,
         updatedAt: serverTimestamp(),
       });
     } catch (error) {
@@ -170,12 +218,23 @@ const replenishStock = async (medicineId, amount) => {
 
   const deleteMedicine = async (medicineId) => {
     try {
-      const medicineRef = doc (db, 'pacientes', pacienteId, 'inventario', medicineId);
+      const medicineRef = doc(db, 'pacientes', pacienteId, 'inventario', medicineId);
+
+      const medicineSnap = await getDoc(medicineRef);
+
+      if (medicineSnap.exists()) {
+        const medicineData = medicineSnap.data();
+
+        if (Array.isArray(medicineData.notificationIds)) {
+          await cancelMedicineReminders(medicineData.notificationIds);
+        }
+      }
+
       await deleteDoc(medicineRef);
     } catch (error) {
-      console.error('Error al eliminar el medicamento: ', error)
+      console.error('Error al eliminar el medicamento: ', error);
     }
-  }
+  };
 
 
   return {
