@@ -152,21 +152,21 @@ const replenishStock = async (medicineId, amount) => {
         lastUpdated: serverTimestamp(),
       });
 
-      if (
-        medicineData.reminderEnabled &&
-        Array.isArray(medicineData.schedules) &&
-        medicineData.schedules.length > 0
-      ) {
-        const notificationIds = await scheduleMedicineReminders({
-          medicineId: medicineRef.id,
-          medicineName: medicineData.name,
-          schedules: medicineData.schedules,
-        });
+     // if (
+      //  medicineData.reminderEnabled &&
+      //  Array.isArray(medicineData.schedules) &&
+      //  medicineData.schedules.length > 0
+     // ) {
+      //  const notificationIds = await scheduleMedicineReminders({
+      //    medicineId: medicineRef.id,
+      //    medicineName: medicineData.name,
+      //    schedules: medicineData.schedules,
+      //  });
 
-        await updateDoc(medicineRef, {
-          notificationIds,
-        });
-      }
+      //  await updateDoc(medicineRef, {
+        //  notificationIds,
+       // });
+     // }
     } catch (error) {
       console.error('Error agregando medicina:', error);
     }
@@ -178,8 +178,35 @@ const replenishStock = async (medicineId, amount) => {
     try {
       const medicineRef = doc(db, 'pacientes', pacienteId, 'inventario', medicineId);
 
+      const medicineSnap = await getDoc(medicineRef);
+
+      if (!medicineSnap.exists()) return;
+
+      const currentMedicineData = medicineSnap.data();
+
+      // Cancelar notificaciones anteriores si existían
+      if (Array.isArray(currentMedicineData.notificationIds)) {
+        await cancelMedicineReminders(currentMedicineData.notificationIds);
+      }
+
+      let notificationIds = [];
+
+      // Reprogramar notificaciones nuevas si el recordatorio está activo
+      if (
+        updateData.reminderEnabled &&
+        Array.isArray(updateData.schedules) &&
+        updateData.schedules.length > 0
+      ) {
+        notificationIds = await scheduleMedicineReminders({
+          medicineId,
+          medicineName: updateData.name || currentMedicineData.name,
+          schedules: updateData.schedules,
+        });
+      }
+
       await updateDoc(medicineRef, {
         ...updateData,
+        notificationIds,
         updatedAt: serverTimestamp(),
       });
     } catch (error) {

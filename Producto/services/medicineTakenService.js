@@ -8,6 +8,8 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 
+import { sendExpoPushNotification } from './notificationService';
+
 import { db } from '../database/firebaseConfig';
 
 const BEFORE_MINUTES = 30;
@@ -18,7 +20,9 @@ const pad = (value) => String(value).padStart(2, '0');
 export const getTodayKey = () => {
   const now = new Date();
 
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(
+    now.getDate()
+  )}`;
 };
 
 export const getScheduleTimeText = (schedule) => {
@@ -72,6 +76,94 @@ export const getDoseWindowStatus = (schedule) => {
 
 export const getDoseTakenId = ({ medicineId, dateKey, scheduleIndex }) => {
   return `${medicineId}_${dateKey}_${scheduleIndex}`;
+};
+
+const notifyCaregivers = async ({
+  patientId,
+  medicineId,
+  medicineName,
+  scheduledTime,
+  amount,
+  stockUnit,
+  source,
+  type,
+}) => {
+  try {
+    const patientRef = doc(db, 'pacientes', patientId);
+    const patientSnap = await getDoc(patientRef);
+
+    if (!patientSnap.exists()) return;
+
+    const patientData = patientSnap.data();
+
+    const patientName =
+      patientData.nombre || patientData.name || 'El paciente';
+
+    const caregiverIds = Array.isArray(patientData.cuidadores)
+      ? patientData.cuidadores
+      : [];
+
+    console.log('Cuidadores encontrados:', caregiverIds);
+
+    for (const caregiverId of caregiverIds) {
+      const caregiverRef = doc(db, 'usuarios', caregiverId);
+      const caregiverSnap = await getDoc(caregiverRef);
+
+      if (!caregiverSnap.exists()) {
+        console.log('Cuidador no encontrado:', caregiverId);
+        continue;
+      }
+
+      const caregiverData = caregiverSnap.data();
+
+      const isTaken = type === 'medicine_taken';
+
+      const message = isTaken
+        ? `${patientName} tomó ${medicineName} (${scheduledTime})`
+        : `${patientName} no registró ${medicineName} (${scheduledTime})`;
+
+      await addDoc(collection(db, 'usuarios', caregiverId, 'alertas'), {
+        type: 'medicine_missed',
+        patientId,
+        medicineId,
+        patientName,
+        medicineName: medicine.name,
+        scheduledTime,
+        amount: doseAmount,
+        stockUnit,
+        source: 'system',
+        message: `${patientName} OMITIÓ ${medicine.name} (${scheduledTime})`,
+        read: false,
+        createdAt: serverTimestamp(),
+      });
+
+    if (caregiverData.expoPushToken) {
+      await sendExpoPushNotification({
+        expoPushToken: caregiverData.expoPushToken,
+        title: '⚠️ Dosis omitida',
+        body: `${patientName} no tomó ${medicine.name} (${scheduledTime})`,
+        data: {
+          type: 'medicine_missed',
+          patientId,
+          medicineId,
+        },
+      });
+    }
+
+      await sendExpoPushNotification({
+        expoPushToken: caregiverData.expoPushToken,
+        title: isTaken ? '✅ Medicamento registrado' : '⚠️ Dosis omitida',
+        body: message,
+        data: {
+          type,
+          patientId,
+          medicineId,
+        },
+      });
+    }
+  } catch (error) {
+    console.error('Error notificando al cuidador:', error);
+  }
 };
 
 export const registerMedicineDoseTaken = async ({
@@ -129,10 +221,7 @@ export const registerMedicineDoseTaken = async ({
 
     const windowStatus = getDoseWindowStatus(schedule);
 
-    if (
-      !allowOutsideWindow &&
-      windowStatus.status === 'locked'
-    ) {
+    if (!allowOutsideWindow && windowStatus.status === 'locked') {
       return {
         ok: false,
         reason: 'locked',
@@ -140,10 +229,7 @@ export const registerMedicineDoseTaken = async ({
       };
     }
 
-    if (
-      !allowOutsideWindow &&
-      windowStatus.status === 'expired'
-    ) {
+    if (!allowOutsideWindow && windowStatus.status === 'expired') {
       return {
         ok: false,
         reason: 'expired',
@@ -204,25 +290,34 @@ export const registerMedicineDoseTaken = async ({
       updatedAt: serverTimestamp(),
     });
 
-    await addDoc(
-      collection(db, 'pacientes', patientId, 'movimientos'),
-      {
-        type: 'consume',
-        medicineId,
-        medicineName: medicine.name,
-        amount: doseAmount, stockUnit,
-        previousStock: currentStock,
-        newStock,
-        scheduleIndex,
-        scheduledTime,
-        date: dateKey,
-        source,
-        description: `Dosis ${scheduledTime} registrada desde ${
-            source === 'notification' ? 'notificación' : 'manual'
-        }. Cantidad: ${doseAmount} ${stockUnit}`,
-        createdAt: serverTimestamp(),
-      }
-    );
+    await addDoc(collection(db, 'pacientes', patientId, 'movimientos'), {
+      type: 'consume',
+      medicineId,
+      medicineName: medicine.name,
+      amount: doseAmount,
+      stockUnit,
+      previousStock: currentStock,
+      newStock,
+      scheduleIndex,
+      scheduledTime,
+      date: dateKey,
+      source,
+      description: `Dosis ${scheduledTime} registrada desde ${
+        source === 'notification' ? 'notificación' : 'manual'
+      }. Cantidad: ${doseAmount} ${stockUnit}`,
+      createdAt: serverTimestamp(),
+    });
+
+    await notifyCaregivers({
+      patientId,
+      medicineId,
+      medicineName: medicine.name,
+      scheduledTime,
+      amount: doseAmount,
+      stockUnit,
+      source,
+      type: 'medicine_taken',
+    });
 
     return {
       ok: true,
@@ -238,6 +333,144 @@ export const registerMedicineDoseTaken = async ({
       ok: false,
       reason: 'error',
       message: 'No se pudo registrar la dosis.',
+    };
+  }
+};
+
+export const registerMissedMedicineDose = async ({
+  patientId,
+  medicineId,
+  scheduleIndex,
+}) => {
+  if (!patientId || !medicineId) {
+    return {
+      ok: false,
+      reason: 'missing_data',
+      message: 'Faltan datos del paciente o medicamento.',
+    };
+  }
+
+  try {
+    const medicineRef = doc(
+      db,
+      'pacientes',
+      patientId,
+      'inventario',
+      medicineId
+    );
+
+    const medicineSnap = await getDoc(medicineRef);
+
+    if (!medicineSnap.exists()) {
+      return {
+        ok: false,
+        reason: 'medicine_not_found',
+        message: 'No se encontró el medicamento.',
+      };
+    }
+
+    const medicine = {
+      id: medicineSnap.id,
+      ...medicineSnap.data(),
+    };
+
+    const schedules = Array.isArray(medicine.schedules)
+      ? medicine.schedules
+      : [];
+
+    const schedule = schedules[scheduleIndex];
+
+    if (!schedule) {
+      return {
+        ok: false,
+        reason: 'schedule_not_found',
+        message: 'No se encontró el horario de esta dosis.',
+      };
+    }
+
+    const dateKey = getTodayKey();
+
+    const doseId = getDoseTakenId({
+      medicineId,
+      dateKey,
+      scheduleIndex,
+    });
+
+    const doseRef = doc(
+      db,
+      'pacientes',
+      patientId,
+      'dosisTomadas',
+      doseId
+    );
+
+    const doseSnap = await getDoc(doseRef);
+
+    if (doseSnap.exists()) {
+      return {
+        ok: false,
+        reason: 'already_registered',
+        message: 'Esta dosis ya fue registrada.',
+      };
+    }
+
+    const scheduledTime = getScheduleTimeText(schedule);
+    const doseAmount = Number(medicine.doseAmount || 1);
+    const stockUnit = medicine.stockUnit || 'unidad';
+
+    await setDoc(doseRef, {
+      patientId,
+      medicineId,
+      medicineName: medicine.name,
+      scheduleIndex,
+      scheduledTime,
+      date: dateKey,
+      status: 'missed',
+      source: 'system',
+      doseAmount,
+      stockUnit,
+      missedAt: serverTimestamp(),
+      createdAt: serverTimestamp(),
+    });
+
+    await addDoc(collection(db, 'pacientes', patientId, 'movimientos'), {
+      type: 'missed',
+      medicineId,
+      medicineName: medicine.name,
+      amount: doseAmount,
+      stockUnit,
+      scheduleIndex,
+      scheduledTime,
+      date: dateKey,
+      source: 'system',
+      description: `Dosis ${scheduledTime} marcada como omitida.`,
+      createdAt: serverTimestamp(),
+    });
+
+    await notifyCaregivers({
+      patientId,
+      medicineId,
+      medicineName: medicine.name,
+      scheduledTime,
+      amount: doseAmount,
+      stockUnit,
+      source: 'system',
+      type: 'medicine_missed',
+    });
+
+    return {
+      ok: true,
+      medicine,
+      scheduledTime,
+      message: 'Dosis marcada como omitida.',
+    };
+  } catch (error) {
+    console.error('Error registrando dosis omitida:', error);
+
+    return {
+      ok: false,
+      reason: 'error',
+      message: 'No se pudo registrar la dosis omitida.',
     };
   }
 };

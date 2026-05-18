@@ -3,14 +3,18 @@ import React, { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { auth, db } from './database/firebaseConfig';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc, addDoc, collection ,serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, addDoc, collection, query, where, onSnapshot ,serverTimestamp } from 'firebase/firestore';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { scheduleSnoozeReminder, setupNotifications } from './services/notificationService';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { registerMedicineDoseTaken } from './services/medicineTakenService';
+import { schedulePatientMedicineReminders } from './services/patientReminderService';
 
+import {
+  scheduleSnoozeReminder,
+  setupNotifications,
+} from './services/notificationService';
 
 
 // Importación de pantallas
@@ -26,6 +30,7 @@ import PatientWaitingLinkScreen from './screens/interfazAdultoMayor/PatientWaiti
 
 import HomeScreen from './screens/interfazAdultoMayor/HomeScreen';
 import EmergencyScreen from './screens/interfazAdultoMayor/EmergencyScreen';
+import TakeMedicineScreen from './screens/interfazAdultoMayor/TakeMedicineScreen';
 
 import LinkPatientScreen from './screens/interfazCuidador/LinkPatientScreen';
 import InventoryScreen from './screens/interfazCuidador/InventoryScreen';
@@ -37,7 +42,6 @@ import MedicineDetailScreen from './screens/interfazCuidador/MedicineDetailScree
 import HistoryScreen from './screens/interfazCuidador/HistoryScreen';
 import SettingsScreen from './screens/interfazCuidador/SettingsScreen';
 import ProfileScreen from './screens/interfazCuidador/ProfileScreen';
-
 
 
 
@@ -61,10 +65,18 @@ export default function App() {
 
       // Usuario tocó "Avisarme en 5 min" 
       if (actionId === 'SNOOZE_5') {
+        const notificationId = response.notification.request.identifier;
+
         await scheduleSnoozeReminder({
           medicineId,
           medicineName,
         });
+
+        try {
+          await Notifications.dismissNotificationAsync(notificationId);
+        } catch (error) {
+          console.log('No se pudo ocultar la notificación:', error);
+        }
 
         return;
       }
@@ -72,6 +84,7 @@ export default function App() {
       // Usuario tocó "Ya la tomé"
       if (actionId === 'TAKEN') {
         const scheduleIndex = Number(data?.scheduleIndex ?? 0);
+        const notificationId = response.notification.request.identifier;
 
         const result = await registerMedicineDoseTaken({
           patientId,
@@ -81,10 +94,26 @@ export default function App() {
           allowOutsideWindow: true,
         });
 
+        try {
+          await Notifications.dismissNotificationAsync(notificationId);
+        } catch (error) {
+          console.log('No se pudo ocultar la notificación:', error);
+        }
+
         if (!result.ok) {
           console.log('No se pudo registrar la dosis:', result.message);
+          return;
         }
-      }
+
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: '💊 Dosis registrada ✅',
+            body: `${medicineName} fue marcado como tomado.`,
+            sound: true,
+          },
+          trigger: null,
+        });
+}
     }
   );
 
@@ -95,6 +124,7 @@ export default function App() {
 
 useEffect(() => {
   // setupNotifications(); // ⚠️ Se activa cuando hay usuario autenticado
+
 
   const unsubscribe = onAuthStateChanged(auth, async (user) => {
     setTimeout(async () => {
@@ -140,6 +170,10 @@ useEffect(() => {
                 id: patientSnap.id,
                 ...patientSnap.data(),
               });
+
+              await setupNotifications();
+              await schedulePatientMedicineReminders(savedAdultPatientId);
+
               setScreen('adultoMayorHome');
             } else {
               await AsyncStorage.removeItem('adultPatientId');
@@ -158,6 +192,51 @@ useEffect(() => {
 
   return unsubscribe;
 }, []);
+
+  useEffect(() => {
+    const isAdultPatientFlow =
+      screen === 'adultoMayorHome' ||
+      screen === 'takeMedicine' ||
+      screen === 'adultoMayorEmergency';
+
+    if (!patientId || !isAdultPatientFlow) return;
+
+    const linkQuery = query(
+      collection(db, 'patientLinkRequests'),
+      where('patientId', '==', patientId)
+    );
+
+    const unsubscribe = onSnapshot(linkQuery, async (snapshot) => {
+      const requests = snapshot.docs.map((docItem) => ({
+        id: docItem.id,
+        ...docItem.data(),
+      }));
+
+      const hasActiveLink = requests.some(
+        (item) => item.estado === 'vinculado'
+      );
+
+      const hasUnlinkedRequest = requests.some(
+        (item) => item.estado === 'desvinculado'
+      );
+
+      if (!hasActiveLink && hasUnlinkedRequest) {
+        await AsyncStorage.removeItem('adultPatientId');
+
+        setPatientId(null);
+        setAdultPatientData(null);
+
+        Alert.alert(
+          'Paciente desvinculado',
+          'La conexión con el cuidador fue finalizada.'
+        );
+
+        setScreen('patientWaitingLink');
+      }
+    });
+
+    return unsubscribe;
+  }, [patientId, screen]);
 
 
   const updateSettings = (newSettings) => {
@@ -232,7 +311,7 @@ const handleLogin = async ({ email, password }) => {
     await signInWithEmailAndPassword(auth, email.trim(), password);
 
     Alert.alert('Bienvenido', 'Inicio de sesión exitoso.');
-    // onAuthStateChanged decidirá si va a inventory o patientForm
+    // onAuthStateChanged decidirá si va al inventario o registro de paciente
     return true;
   } catch (error) {
     console.error('Error iniciando sesión:', error);
@@ -287,7 +366,7 @@ const handleLogout = async () => {
     );
   }
 
-  //---------- Flujo Familiar ----------------
+  //---------- AUTH ----------------
 
   //Inicio Sesion
   if (screen === 'login') {
@@ -349,8 +428,14 @@ const handleLogout = async () => {
       onBack={() => setScreen('select')}
       onLinked={async ({ patientId, patientData }) => {
         await AsyncStorage.setItem('adultPatientId', patientId);
+
         setPatientId(patientId);
         setAdultPatientData(patientData);
+
+        await setupNotifications();
+
+        await schedulePatientMedicineReminders(patientId);
+
         setScreen('adultoMayorHome');
       }}
     />
@@ -367,32 +452,39 @@ const handleLogout = async () => {
 }
 
   if (screen === 'adultoMayorHome') {
-  return (
-    <HomeScreen
-      patientData={adultPatientData}
-      onBack={() => setScreen('select')}
-      onTakeMedicine={() =>
-        Alert.alert('Próximamente', 'Aquí irá la acción de tomar medicamento')
-      }
-      onLowStock={() =>
-        Alert.alert('Próximamente', 'Aquí irá la opción de stock bajo')
-      }
-      onEmergency={() => setScreen('adultoMayorEmergency')}
-    />
-  );
-}
+      return (
+      <HomeScreen
+        patientData={adultPatientData}
+        onBack={() => setScreen('select')}
+        onTakeMedicine={() => setScreen('takeMedicine')}
+        onLowStock={() =>
+          Alert.alert('Próximamente', 'Aquí irá la opción de stock bajo')
+        }
+        onEmergency={() => setScreen('adultoMayorEmergency')}
+      />
+    );
+  }
 
   if (screen === 'adultoMayorEmergency') {
-  return (
-    <EmergencyScreen
+    return (
+      <EmergencyScreen
       onBack={() => setScreen('adultoMayorHome')}
       onCallFamily={() =>
         Alert.alert('Próximamente', 'Aquí irá la llamada al familiar')
       }
       onSendAlert={() => {}}
       onCancel={() => setScreen('adultoMayorHome')}
-    />
-  );
+      />
+    );
+  }
+
+  if (screen === 'takeMedicine') {
+    return (
+      <TakeMedicineScreen
+        patientId={patientId}
+        onBack={() => setScreen('adultoMayorHome')}
+      />
+    );
 }
 
   //---------- Inicio ----------------
@@ -499,6 +591,7 @@ const handleLogout = async () => {
     return (
       <ProfileScreen
         settings={settings}
+        patientId={patientId}
         onBack={() => setScreen('inventory')}
         onLogout={handleLogout}
       />

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -21,7 +21,9 @@ import {
   where,
   getDocs,
   doc,
+  getDoc,
   updateDoc,
+  arrayUnion,
   serverTimestamp,
 } from 'firebase/firestore';
 
@@ -29,8 +31,101 @@ const LinkPatientScreen = ({ patientId, onBack, onLinked }) => {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [checkingLink, setCheckingLink] = useState(true);
   const [manualVisible, setManualVisible] = useState(false);
   const [manualCode, setManualCode] = useState('');
+  const [patientName, setPatientName] = useState('Paciente');
+  const [activeLinkRequestId, setActiveLinkRequestId] = useState(null);
+
+  useEffect(() => {
+    const loadCurrentLinkStatus = async () => {
+      try {
+        if (!patientId) {
+          setCheckingLink(false);
+          return;
+        }
+
+        const patientRef = doc(db, 'pacientes', patientId);
+        const patientSnap = await getDoc(patientRef);
+
+        if (patientSnap.exists()) {
+          const data = patientSnap.data();
+          setPatientName(data.nombre || data.name || 'Paciente');
+        }
+
+        const requestQuery = query(
+          collection(db, 'patientLinkRequests'),
+          where('patientId', '==', patientId),
+          where('estado', '==', 'vinculado')
+        );
+
+        const requestSnap = await getDocs(requestQuery);
+
+        if (!requestSnap.empty) {
+          setActiveLinkRequestId(requestSnap.docs[0].id);
+        }
+      } catch (error) {
+        console.error('Error revisando vinculación:', error);
+      } finally {
+        setCheckingLink(false);
+      }
+    };
+
+    loadCurrentLinkStatus();
+  }, [patientId]);
+
+  const handleUnlinkPatient = () => {
+    Alert.alert(
+      'Desvincular paciente',
+      `¿Seguro que deseas desvincular la interfaz de ${patientName}?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Sí, desvincular',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Confirmación final',
+              'Esta acción desconectará la interfaz del adulto mayor. El inventario NO se eliminará.',
+              [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                  text: 'Desvincular',
+                  style: 'destructive',
+                  onPress: unlinkPatient,
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  };
+
+  const unlinkPatient = async () => {
+    if (!activeLinkRequestId) return;
+
+    try {
+      setLoading(true);
+
+      await updateDoc(doc(db, 'patientLinkRequests', activeLinkRequestId), {
+        estado: 'desvinculado',
+        unlinkedAt: serverTimestamp(),
+      });
+
+      setActiveLinkRequestId(null);
+
+      Alert.alert(
+        'Paciente desvinculado',
+        'La interfaz del paciente fue desconectada correctamente.'
+      );
+    } catch (error) {
+      console.error('Error desvinculando paciente:', error);
+      Alert.alert('Error', 'No se pudo desvincular el paciente.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const completeLinkRequestByCode = async (rawCode) => {
     if (loading) return;
@@ -87,6 +182,14 @@ const LinkPatientScreen = ({ patientId, onBack, onLinked }) => {
         linkedAt: serverTimestamp(),
       });
 
+      await updateDoc(doc(db, 'pacientes', patientId), {
+        cuidadores: arrayUnion(user.uid),
+        estadoVinculacion: 'vinculado',
+        linkedAt: serverTimestamp(),
+      });
+
+      setActiveLinkRequestId(requestDoc.id);
+
       Alert.alert(
         'Vinculación exitosa',
         'La interfaz del paciente ya está conectada a este paciente.'
@@ -112,6 +215,51 @@ const LinkPatientScreen = ({ patientId, onBack, onLinked }) => {
     setScanned(true);
     await completeLinkRequestByCode(data);
   };
+
+  if (checkingLink) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#42B65A" />
+        <Text style={styles.subtitle}>Revisando vinculación...</Text>
+      </View>
+    );
+  }
+
+  if (activeLinkRequestId) {
+    return (
+      <View style={styles.centerContainer}>
+        <View style={styles.connectedIcon}>
+          <Ionicons name="checkmark-circle-outline" size={72} color="#42B65A" />
+        </View>
+
+        <Text style={styles.title}>Paciente vinculado</Text>
+
+        <Text style={styles.subtitle}>
+          Ya tienes conectada la interfaz de {patientName}.
+        </Text>
+
+        <View style={styles.connectedBox}>
+          <Ionicons name="person-outline" size={24} color="#42B65A" />
+          <Text style={styles.connectedText}>{patientName}</Text>
+        </View>
+
+        <TouchableOpacity style={styles.button} onPress={onBack}>
+          <Text style={styles.buttonText}>Volver al inventario</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.unlinkButton}
+          onPress={handleUnlinkPatient}
+          disabled={loading}
+        >
+          <Ionicons name="unlink-outline" size={21} color="#FFFFFF" />
+          <Text style={styles.unlinkText}>
+            {loading ? 'Desvinculando...' : 'Desvincular paciente'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   if (!permission) {
     return (
@@ -391,6 +539,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
   },
 
+  connectedIcon: {
+    width: 112,
+    height: 112,
+    borderRadius: 34,
+    backgroundColor: '#EAF8EE',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  connectedBox: {
+    marginTop: 18,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    paddingHorizontal: 22,
+    paddingVertical: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    elevation: 2,
+  },
+
+  connectedText: {
+    marginLeft: 10,
+    color: '#2D3436',
+    fontSize: 18,
+    fontWeight: '900',
+  },
+
   title: {
     marginTop: 18,
     fontSize: 28,
@@ -420,6 +595,23 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '900',
+  },
+
+  unlinkButton: {
+    marginTop: 14,
+    backgroundColor: '#E74C3C',
+    borderRadius: 18,
+    paddingHorizontal: 24,
+    paddingVertical: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  unlinkText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '900',
+    marginLeft: 8,
   },
 
   manualPermissionButton: {

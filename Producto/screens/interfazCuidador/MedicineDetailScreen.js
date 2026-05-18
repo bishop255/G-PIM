@@ -10,15 +10,14 @@ import {
   Modal,
   TextInput,
 } from 'react-native';
+
 import { Ionicons } from '@expo/vector-icons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { getTheme } from '../../theme/theme';
 import { useInventory } from '../../hook/useInventory';
 
-
-
 const MedicineDetailScreen = ({ settings, medicine, onBack, onEdit, patientId }) => {
-  const { deleteMedicine, consumeDose, replenishStock } = useInventory(patientId);
+  const { deleteMedicine, replenishStock } = useInventory(patientId);
   const { colors, fontSizes } = getTheme(settings);
 
   const [modalVisible, setModalVisible] = useState(false);
@@ -27,14 +26,18 @@ const MedicineDetailScreen = ({ settings, medicine, onBack, onEdit, patientId })
 
   const inputBackground = colors.isDark ? '#2A2A2A' : '#EFEFEF';
 
+  const stockUnit = medicine.stockUnit || 'unidad';
+  const doseAmount = Number(medicine.doseAmount || 1);
+  const dailyDose = Number(medicine.dailyDose || 0);
+  const dailyConsumption = doseAmount * dailyDose;
+
   const getRemainingDays = () => {
     const stock = Number(medicine.currentStock || 0);
-    const dose = Number(medicine.dailyDose || 0);
 
     if (stock <= 0) return 0;
-    if (dose <= 0) return null;
+    if (dailyConsumption <= 0) return null;
 
-    return Math.floor(stock / dose);
+    return Math.floor(stock / dailyConsumption);
   };
 
   const getStatus = () => {
@@ -58,14 +61,21 @@ const MedicineDetailScreen = ({ settings, medicine, onBack, onEdit, patientId })
 
   const getCategoryIcon = () => {
     switch (medicine.category) {
+      case 'Tableta / Cápsula':
       case 'Tableta':
         return 'pill';
+
+      case 'Jarabe / Gotas':
       case 'Jarabe':
-        return 'bottle-tonic';
+        return 'bottle-tonic-plus';
+
       case 'Inyección':
         return 'needle';
+
+      case 'Insumo médico':
       case 'Otro':
         return 'medical-bag';
+
       default:
         return 'pill';
     }
@@ -80,40 +90,40 @@ const MedicineDetailScreen = ({ settings, medicine, onBack, onEdit, patientId })
   };
 
   const getStockLevel = () => {
-  const stock = Number(medicine.currentStock || 0);
-  const minStock = Number(medicine.minStock || 0);
-  const percentage = getStockPercentage();
+    const stock = Number(medicine.currentStock || 0);
+    const minStock = Number(medicine.minStock || 0);
+    const percentage = getStockPercentage();
 
-  if (stock < minStock) {
+    if (stock < minStock) {
+      return {
+        label: 'Crítico',
+        color: '#E74C3C',
+        message: 'El stock está por debajo del mínimo establecido.',
+      };
+    }
+
+    if (stock === minStock) {
+      return {
+        label: 'Bajo',
+        color: '#F39C12',
+        message: 'El stock llegó al mínimo establecido.',
+      };
+    }
+
+    if (percentage <= 50) {
+      return {
+        label: 'Medio',
+        color: '#D68910',
+        message: 'El stock está a la mitad o menos de su capacidad inicial.',
+      };
+    }
+
     return {
-      label: 'Crítico',
-      color: '#E74C3C',
-      message: 'El stock está por debajo del mínimo establecido.',
+      label: 'Seguro',
+      color: '#27AE60',
+      message: 'El stock está en un rango seguro.',
     };
-  }
-
-  if (stock === minStock) {
-    return {
-      label: 'Bajo',
-      color: '#F39C12',
-      message: 'El stock llegó al mínimo establecido.',
-    };
-  }
-
-  if (percentage <= 50) {
-    return {
-      label: 'Medio',
-      color: '#D68910',
-      message: 'El stock está a la mitad o menos de su capacidad inicial.',
-    };
-  }
-
-  return {
-    label: 'Seguro',
-    color: '#27AE60',
-    message: 'El stock está en un rango seguro.',
   };
-};
 
   const remainingDays = getRemainingDays();
   const status = getStatus();
@@ -130,6 +140,13 @@ const MedicineDetailScreen = ({ settings, medicine, onBack, onEdit, patientId })
       day: '2-digit',
       month: 'long',
     });
+  };
+
+  const formatSchedule = (schedule) => {
+    const hour = String(schedule.hour).padStart(2, '0');
+    const minute = String(schedule.minute).padStart(2, '0');
+
+    return `${hour}:${minute}`;
   };
 
   const progressAnim = useRef(new Animated.Value(0)).current;
@@ -161,15 +178,14 @@ const MedicineDetailScreen = ({ settings, medicine, onBack, onEdit, patientId })
     ]);
   };
 
-  const handleConsumeDose = async () => {
-    await consumeDose(medicine);
-    Alert.alert('Dosis registrada', 'Se descontó la dosis diaria del stock.');
-    onBack();
-  };
-
   const handleReplenish = async () => {
-    if (!amount || isNaN(amount)) {
-      Alert.alert('Error', 'Ingresa una cantidad válida');
+    if (!amount || isNaN(Number(amount))) {
+      Alert.alert('Error', `Ingresa una cantidad válida en ${stockUnit}`);
+      return;
+    }
+
+    if (Number(amount) <= 0) {
+      Alert.alert('Error', 'La cantidad debe ser mayor a 0');
       return;
     }
 
@@ -181,7 +197,7 @@ const MedicineDetailScreen = ({ settings, medicine, onBack, onEdit, patientId })
     setModalVisible(false);
     setAmount('');
 
-    Alert.alert('Stock actualizado', 'Se agregó correctamente');
+    Alert.alert('Stock actualizado', `Se agregaron ${amount} ${stockUnit}.`);
     onBack();
   };
 
@@ -242,7 +258,7 @@ const MedicineDetailScreen = ({ settings, medicine, onBack, onEdit, patientId })
           ]}
         >
           {remainingDays === null
-            ? 'Dosis diaria no definida'
+            ? 'Consumo diario no definido'
             : remainingDays === 1
             ? 'Se acaba en 1 día'
             : `Se acaba en ${remainingDays} días`}
@@ -338,7 +354,7 @@ const MedicineDetailScreen = ({ settings, medicine, onBack, onEdit, patientId })
                 { color: colors.secondaryText, fontSize: fontSizes.small },
               ]}
             >
-              Stock actual
+              Stock actual ({stockUnit})
             </Text>
           </View>
 
@@ -357,7 +373,7 @@ const MedicineDetailScreen = ({ settings, medicine, onBack, onEdit, patientId })
                 { color: colors.secondaryText, fontSize: fontSizes.small },
               ]}
             >
-              Stock mínimo
+              Stock mínimo ({stockUnit})
             </Text>
           </View>
 
@@ -368,7 +384,7 @@ const MedicineDetailScreen = ({ settings, medicine, onBack, onEdit, patientId })
                 { color: colors.text, fontSize: fontSizes.header },
               ]}
             >
-              {medicine.dailyDose ?? 0}
+              {dailyDose}
             </Text>
             <Text
               style={[
@@ -376,20 +392,65 @@ const MedicineDetailScreen = ({ settings, medicine, onBack, onEdit, patientId })
                 { color: colors.secondaryText, fontSize: fontSizes.small },
               ]}
             >
-              Dosis diaria
+              Tomas diarias
             </Text>
           </View>
         </View>
+
+        <View style={styles.infoGrid}>
+          <View style={[styles.infoBox, { backgroundColor: colors.background }]}>
+            <Ionicons name="medkit-outline" size={22} color={colors.text} />
+            <Text style={[styles.infoLabel, { color: colors.secondaryText }]}>
+              Cantidad por toma
+            </Text>
+            <Text style={[styles.infoValue, { color: colors.text }]}>
+              {doseAmount} {stockUnit}
+            </Text>
+          </View>
+
+          <View style={[styles.infoBox, { backgroundColor: colors.background }]}>
+            <Ionicons name="calculator-outline" size={22} color={colors.text} />
+            <Text style={[styles.infoLabel, { color: colors.secondaryText }]}>
+              Consumo diario
+            </Text>
+            <Text style={[styles.infoValue, { color: colors.text }]}>
+              {dailyConsumption || 0} {stockUnit}
+            </Text>
+          </View>
+        </View>
+
+        {Array.isArray(medicine.schedules) && medicine.schedules.length > 0 && (
+          <View style={styles.scheduleSection}>
+            <Text
+              style={[
+                styles.sectionTitle,
+                { color: colors.text, fontSize: fontSizes.normal },
+              ]}
+            >
+              Horarios de toma
+            </Text>
+
+            <View style={styles.scheduleList}>
+              {medicine.schedules.map((schedule, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.schedulePill,
+                    { backgroundColor: colors.background },
+                  ]}
+                >
+                  <Ionicons name="time-outline" size={18} color={colors.text} />
+                  <Text style={[styles.scheduleText, { color: colors.text }]}>
+                    {formatSchedule(schedule)}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
       </View>
 
       <View style={styles.actions}>
-        <TouchableOpacity style={styles.consumeButton} onPress={handleConsumeDose}>
-          <Ionicons name="remove-circle-outline" size={22} color="#FFFFFF" />
-          <Text style={[styles.primaryButtonText, { fontSize: fontSizes.button }]}>
-            Consumir dosis
-          </Text>
-        </TouchableOpacity>
-
         <TouchableOpacity
           style={styles.restockButton}
           onPress={() => setModalVisible(true)}
@@ -443,10 +504,19 @@ const MedicineDetailScreen = ({ settings, medicine, onBack, onEdit, patientId })
               Reponer stock
             </Text>
 
+            <Text
+              style={[
+                styles.modalSubtitle,
+                { color: colors.secondaryText, fontSize: fontSizes.normal },
+              ]}
+            >
+              Ingresa la cantidad a agregar en {stockUnit}.
+            </Text>
+
             <TextInput
-              placeholder="Cantidad a agregar"
+              placeholder={`Cantidad a agregar (${stockUnit})`}
               placeholderTextColor={colors.secondaryText}
-              keyboardType="numeric"
+              keyboardType="decimal-pad"
               value={amount}
               onChangeText={setAmount}
               style={[
@@ -545,6 +615,7 @@ const styles = StyleSheet.create({
   remainingText: {
     fontWeight: '800',
     marginTop: 14,
+    textAlign: 'center',
   },
   progressContainer: {
     width: '100%',
@@ -616,6 +687,7 @@ const styles = StyleSheet.create({
     width: '31%',
     borderRadius: 18,
     paddingVertical: 14,
+    paddingHorizontal: 4,
     alignItems: 'center',
   },
   stockNumber: {
@@ -626,18 +698,58 @@ const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: 'center',
   },
-  actions: {
-    marginTop: 20,
+  infoGrid: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 14,
   },
-  consumeButton: {
-    backgroundColor: '#42B65A',
+  infoBox: {
+    width: '48%',
     borderRadius: 18,
-    paddingVertical: 15,
+    padding: 14,
+    alignItems: 'center',
+  },
+  infoLabel: {
+    marginTop: 6,
+    fontSize: 12,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  infoValue: {
+    marginTop: 4,
+    fontSize: 16,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+  scheduleSection: {
+    width: '100%',
+    marginTop: 18,
+  },
+  sectionTitle: {
+    fontWeight: '900',
+    marginBottom: 10,
+  },
+  scheduleList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  schedulePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-    elevation: 3,
+    paddingHorizontal: 13,
+    paddingVertical: 9,
+    borderRadius: 999,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  scheduleText: {
+    marginLeft: 6,
+    fontWeight: '900',
+    fontSize: 14,
+  },
+  actions: {
+    marginTop: 20,
   },
   restockButton: {
     backgroundColor: '#2D9CDB',
@@ -690,6 +802,11 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontWeight: '800',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  modalSubtitle: {
+    fontWeight: '700',
     marginBottom: 15,
     textAlign: 'center',
   },

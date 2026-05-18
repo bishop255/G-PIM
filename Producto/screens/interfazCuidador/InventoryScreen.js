@@ -73,13 +73,20 @@ const InventoryScreen = ({
       .sort((a, b) => getPriorityValue(a) - getPriorityValue(b));
   }, [medicines, search]);
 
+  // Funciones para calcular días restantes y estado de stock
   const getRemainingDays = (item) => {
     const currentStock = Number(item.currentStock || 0);
     const dailyDose = Number(item.dailyDose || 0);
+    const doseAmount = Number(item.doseAmount || 1);
+
+    const dailyConsumption = dailyDose * doseAmount;
+
     if (currentStock <= 0) return 0;
-    if (dailyDose <= 0) return null;
-    return Math.floor(currentStock / dailyDose);
+    if (dailyConsumption <= 0) return null;
+
+    return Math.floor(currentStock / dailyConsumption);
   };
+
 
   const getStockStatus = (item) => {
     const currentStock = Number(item.currentStock || 0);
@@ -97,14 +104,31 @@ const InventoryScreen = ({
     return { label: 'Suficiente', color: '#27AE60', background: '#EAF8EE', iconColor: '#27AE60' };
   };
 
+  // Obtener ícono según categoría
   const getCategoryIcon = (category) => {
     switch (category) {
-      case 'Tableta': return 'pill';
-      case 'Jarabe': return 'bottle-tonic';
-      case 'Inyección': return 'needle';
-      case 'Otro': return 'medical-bag';
-      default: return 'pill';
+      case 'Tableta / Cápsula':
+      case 'Tableta':
+        return 'pill';
+
+      case 'Jarabe / Gotas':
+      case 'Jarabe':
+        return 'bottle-tonic-plus';
+
+      case 'Inyección':
+        return 'needle';
+
+      case 'Insumo médico':
+      case 'Otro':
+        return 'medical-bag';
+
+      default:
+        return 'pill';
     }
+  };
+
+  const formatStockUnit = (item) => {
+    return item.stockUnit || 'unidad';
   };
 
   const renderItem = ({ item }) => {
@@ -145,7 +169,7 @@ const InventoryScreen = ({
                   },
                 ]}
               >
-                Stock: {item.currentStock ?? 0} unidades
+                Stock: {item.currentStock ?? 0} {formatStockUnit(item)}
               </Text>
 
               <Text
