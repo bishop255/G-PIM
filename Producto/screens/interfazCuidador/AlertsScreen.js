@@ -174,6 +174,25 @@ const AlertsScreen = ({
 
   const eventAlerts = useMemo(() => {
     return caregiverAlerts.map((item) => {
+      if (item.type === 'emergency') {
+        return {
+          id: `event-${item.id}`,
+          rawId: item.id,
+          type: 'event',
+          eventType: 'emergency',
+          title: 'Emergencia',
+          medicineName: 'Solicitud de ayuda',
+          message:
+            item.message ||
+            `${item.patientName || 'El paciente'} solicitó ayuda de emergencia.`,
+          detail: `${item.patientName || 'Paciente'} · ${formatDateTime(item.createdAt)}`,
+          color: '#E74C3C',
+          background: '#FDECEC',
+          icon: 'warning',
+          priority: 0,
+        };
+      }
+
       if (item.type === 'medicine_missed') {
         return {
           id: `event-${item.id}`,
@@ -184,8 +203,12 @@ const AlertsScreen = ({
           medicineName: item.medicineName || 'Medicamento',
           message:
             item.message ||
-            `${item.patientName || 'El paciente'} no registró ${item.medicineName || 'el medicamento'}.`,
-          detail: `Horario: ${item.scheduledTime || '--:--'} · ${formatDateTime(item.createdAt)}`,
+            `${item.patientName || 'El paciente'} no registró ${
+              item.medicineName || 'el medicamento'
+            }.`,
+          detail: `Horario: ${item.scheduledTime || '--:--'} · ${formatDateTime(
+            item.createdAt
+          )}`,
           color: '#E74C3C',
           background: '#FDECEC',
           icon: 'close-circle',
@@ -202,8 +225,12 @@ const AlertsScreen = ({
         medicineName: item.medicineName || 'Medicamento',
         message:
           item.message ||
-          `${item.patientName || 'El paciente'} tomó ${item.medicineName || 'el medicamento'}.`,
-        detail: `Horario: ${item.scheduledTime || '--:--'} · ${formatDateTime(item.createdAt)}`,
+          `${item.patientName || 'El paciente'} tomó ${
+            item.medicineName || 'el medicamento'
+          }.`,
+        detail: `Horario: ${item.scheduledTime || '--:--'} · ${formatDateTime(
+          item.createdAt
+        )}`,
         color: '#27AE60',
         background: '#EAF8EE',
         icon: 'checkmark-circle',
@@ -231,7 +258,7 @@ const AlertsScreen = ({
 
     Alert.alert(
       'Marcar eventos como leídos',
-      'Se ocultarán las alertas de tomas y dosis omitidas ya revisadas. Las alertas de stock seguirán visibles hasta que repongas stock.',
+      'Se ocultarán las alertas de tomas, dosis omitidas y emergencias ya revisadas. Las alertas de stock seguirán visibles hasta que repongas stock.',
       [
         { text: 'Cancelar', style: 'cancel' },
         {

@@ -10,10 +10,6 @@ import {
   getDoc,
   serverTimestamp,
 } from 'firebase/firestore';
-import {
-  scheduleMedicineReminders,
-  cancelMedicineReminders,
-} from '../services/notificationService';
 
 export const useInventory = (pacienteId) => {
   const [medicines, setMedicines] = useState([]);
@@ -49,21 +45,27 @@ export const useInventory = (pacienteId) => {
   }, [pacienteId]);
 
   const addMovement = async (movementData) => {
-  try {
-    const movementsRef = collection(db, 'pacientes', pacienteId, 'movimientos');
+    try {
+      const movementsRef = collection(db, 'pacientes', pacienteId, 'movimientos');
 
-    await addDoc(movementsRef, {
-      ...movementData,
-      createdAt: serverTimestamp(),
-    });
-  } catch (error) {
-    console.error('Error registrando movimiento:', error);
-  }
-};
+      await addDoc(movementsRef, {
+        ...movementData,
+        createdAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error('Error registrando movimiento:', error);
+    }
+  };
 
   const updateMedicineStock = async (medicineId, newQuantity) => {
     try {
-      const medicineRef = doc(db, 'pacientes', pacienteId, 'inventario', medicineId);
+      const medicineRef = doc(
+        db,
+        'pacientes',
+        pacienteId,
+        'inventario',
+        medicineId
+      );
 
       await updateDoc(medicineRef, {
         currentStock: newQuantity,
@@ -75,138 +77,113 @@ export const useInventory = (pacienteId) => {
   };
 
   const consumeDose = async (medicine) => {
-  try {
-    const currentStock = Number(medicine.currentStock || 0);
-    const dailyDose = Number(medicine.dailyDose || 0);
-
-    const newStock = Math.max(currentStock - dailyDose, 0);
-
-    const medicineRef = doc(db, 'pacientes', pacienteId, 'inventario', medicine.id);
-
-    await updateDoc(medicineRef, {
-      currentStock: newStock,
-      updatedAt: serverTimestamp(),
-    });
-
-    await addMovement({
-      type: 'consume',
-      medicineId: medicine.id,
-      medicineName: medicine.name,
-      amount: dailyDose,
-      previousStock: currentStock,
-      newStock,
-      description: `Consumo de ${dailyDose} unidad(es)`,
-    });
-  } catch (error) {
-    console.error('Error consumiendo dosis:', error);
-  }
-};
-
-const replenishStock = async (medicineId, amount) => {
-  try {
-    const medicineRef = doc(db, 'pacientes', pacienteId, 'inventario', medicineId);
-
-    const medicineSnap = await getDoc(medicineRef);
-
-    if (!medicineSnap.exists()) return;
-
-    const medicineData = medicineSnap.data();
-    const currentStock = Number(medicineData.currentStock || 0);
-    const quantityToAdd = Number(amount || 0);
-    const newStock = currentStock + quantityToAdd;
-
-    await updateDoc(medicineRef, {
-      currentStock: newStock,
-      updatedAt: serverTimestamp(),
-    });
-
-    await addMovement({
-      type: 'replenish',
-      medicineId,
-      medicineName: medicineData.name,
-      amount: quantityToAdd,
-      previousStock: currentStock,
-      newStock,
-      description: `Reposición de ${quantityToAdd} unidad(es)`,
-    });
-  } catch (error) {
-    console.error('Error reponiendo stock:', error);
-  }
-};
-
-
-  // MEDICAMENTO//
-
-
-  //Agregar Medicamento//
-  const addMedicine = async (medicineData) => {
     try {
-      const inventoryRef = collection(db, 'pacientes', pacienteId, 'inventario');
+      const currentStock = Number(medicine.currentStock || 0);
+      const dailyDose = Number(medicine.dailyDose || 0);
 
-      const medicineRef = await addDoc(inventoryRef, {
-        ...medicineData,
-        currentStock: Number(medicineData.currentStock) || 0,
-        minStock: Number(medicineData.minStock) || 0,
-        dailyDose: Number(medicineData.dailyDose) || 0,
-        notificationIds: [],
-        lastUpdated: serverTimestamp(),
+      const newStock = Math.max(currentStock - dailyDose, 0);
+
+      const medicineRef = doc(
+        db,
+        'pacientes',
+        pacienteId,
+        'inventario',
+        medicine.id
+      );
+
+      await updateDoc(medicineRef, {
+        currentStock: newStock,
+        updatedAt: serverTimestamp(),
       });
 
-     // if (
-      //  medicineData.reminderEnabled &&
-      //  Array.isArray(medicineData.schedules) &&
-      //  medicineData.schedules.length > 0
-     // ) {
-      //  const notificationIds = await scheduleMedicineReminders({
-      //    medicineId: medicineRef.id,
-      //    medicineName: medicineData.name,
-      //    schedules: medicineData.schedules,
-      //  });
-
-      //  await updateDoc(medicineRef, {
-        //  notificationIds,
-       // });
-     // }
+      await addMovement({
+        type: 'consume',
+        medicineId: medicine.id,
+        medicineName: medicine.name,
+        amount: dailyDose,
+        previousStock: currentStock,
+        newStock,
+        description: `Consumo de ${dailyDose} unidad(es)`,
+      });
     } catch (error) {
-      console.error('Error agregando medicina:', error);
+      console.error('Error consumiendo dosis:', error);
     }
   };
 
-  //Actualizar Medicamento//
-
-  const updateMedicine = async (medicineId, updateData) => {
+  const replenishStock = async (medicineId, amount) => {
     try {
-      const medicineRef = doc(db, 'pacientes', pacienteId, 'inventario', medicineId);
+      const medicineRef = doc(
+        db,
+        'pacientes',
+        pacienteId,
+        'inventario',
+        medicineId
+      );
 
       const medicineSnap = await getDoc(medicineRef);
 
       if (!medicineSnap.exists()) return;
 
-      const currentMedicineData = medicineSnap.data();
+      const medicineData = medicineSnap.data();
+      const currentStock = Number(medicineData.currentStock || 0);
+      const quantityToAdd = Number(amount || 0);
+      const newStock = currentStock + quantityToAdd;
 
-      // Cancelar notificaciones anteriores si existían
-      if (Array.isArray(currentMedicineData.notificationIds)) {
-        await cancelMedicineReminders(currentMedicineData.notificationIds);
-      }
+      await updateDoc(medicineRef, {
+        currentStock: newStock,
+        updatedAt: serverTimestamp(),
+      });
 
-      let notificationIds = [];
+      await addMovement({
+        type: 'replenish',
+        medicineId,
+        medicineName: medicineData.name,
+        amount: quantityToAdd,
+        stockUnit: medicineData.stockUnit || 'unidad',
+        previousStock: currentStock,
+        newStock,
+        description: `Reposición de ${quantityToAdd} ${
+          medicineData.stockUnit || 'unidad'
+        }`,
+      });
+    } catch (error) {
+      console.error('Error reponiendo stock:', error);
+    }
+  };
 
-      // Reprogramar notificaciones nuevas si el recordatorio está activo
-      if (
-        updateData.reminderEnabled &&
-        Array.isArray(updateData.schedules) &&
-        updateData.schedules.length > 0
-      ) {
-        notificationIds = await scheduleMedicineReminders({
-          medicineId,
-          medicineName: updateData.name || currentMedicineData.name,
-          schedules: updateData.schedules,
-        });
-      }
+  const addMedicine = async (medicineData) => {
+    try {
+      const inventoryRef = collection(db, 'pacientes', pacienteId, 'inventario');
+
+      await addDoc(inventoryRef, {
+        ...medicineData,
+        currentStock: Number(medicineData.currentStock) || 0,
+        initialStock: Number(medicineData.initialStock) || Number(medicineData.currentStock) || 0,
+        minStock: Number(medicineData.minStock) || 0,
+        doseAmount: Number(medicineData.doseAmount) || 1,
+        dailyDose: Number(medicineData.dailyDose) || 0,
+        notificationIds: [],
+        lastUpdated: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error('Error agregando medicina:', error);
+    }
+  };
+
+  const updateMedicine = async (medicineId, updateData) => {
+    try {
+      const medicineRef = doc(
+        db,
+        'pacientes',
+        pacienteId,
+        'inventario',
+        medicineId
+      );
 
       await updateDoc(medicineRef, {
         ...updateData,
-        notificationIds,
+        notificationIds: [],
         updatedAt: serverTimestamp(),
       });
     } catch (error) {
@@ -214,28 +191,21 @@ const replenishStock = async (medicineId, amount) => {
     }
   };
 
-  //Eliminar Medicamento//
-
   const deleteMedicine = async (medicineId) => {
     try {
-      const medicineRef = doc(db, 'pacientes', pacienteId, 'inventario', medicineId);
-
-      const medicineSnap = await getDoc(medicineRef);
-
-      if (medicineSnap.exists()) {
-        const medicineData = medicineSnap.data();
-
-        if (Array.isArray(medicineData.notificationIds)) {
-          await cancelMedicineReminders(medicineData.notificationIds);
-        }
-      }
+      const medicineRef = doc(
+        db,
+        'pacientes',
+        pacienteId,
+        'inventario',
+        medicineId
+      );
 
       await deleteDoc(medicineRef);
     } catch (error) {
       console.error('Error al eliminar el medicamento: ', error);
     }
   };
-
 
   return {
     medicines,

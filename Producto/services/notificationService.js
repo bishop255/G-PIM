@@ -118,6 +118,7 @@ export const scheduleMedicineReminder = async ({
   medicineId,
   medicineName,
   scheduleIndex,
+  reminderAttempt = 0,
 }) => {
   return await Notifications.scheduleNotificationAsync({
     content: {
@@ -130,6 +131,7 @@ export const scheduleMedicineReminder = async ({
         medicineId,
         medicineName,
         scheduleIndex,
+        reminderAttempt,
       },
     },
     trigger: {
@@ -148,6 +150,19 @@ export const scheduleMedicineReminders = async ({
 }) => {
   const notificationIds = [];
 
+  const addMinutesToSchedule = (hour, minute, extraMinutes) => {
+    const date = new Date();
+    date.setHours(Number(hour));
+    date.setMinutes(Number(minute) + extraMinutes);
+    date.setSeconds(0);
+    date.setMilliseconds(0);
+
+    return {
+      hour: date.getHours(),
+      minute: date.getMinutes(),
+    };
+  };
+
   for (let index = 0; index < schedules.length; index++) {
     const schedule = schedules[index];
 
@@ -158,21 +173,60 @@ export const scheduleMedicineReminders = async ({
       continue;
     }
 
-    const notificationId = await scheduleMedicineReminder({
+    const mainId = await scheduleMedicineReminder({
       medicineId,
       medicineName,
       scheduleIndex: index,
+      reminderAttempt: 0,
       title: `💊 Hora de tomar ${medicineName}`,
       body: `Recuerda tomar tu dosis de ${medicineName}.`,
       hour: Number(schedule.hour),
       minute: Number(schedule.minute),
     });
 
-    notificationIds.push(notificationId);
+    notificationIds.push(mainId);
+
+    const retryOneTime = addMinutesToSchedule(
+      schedule.hour,
+      schedule.minute,
+      5
+    );
+
+    const retryOneId = await scheduleMedicineReminder({
+      medicineId,
+      medicineName,
+      scheduleIndex: index,
+      reminderAttempt: 1,
+      title: `⏰ Recordatorio: ${medicineName}`,
+      body: `Aún no registras tu dosis de ${medicineName}.`,
+      hour: retryOneTime.hour,
+      minute: retryOneTime.minute,
+    });
+
+    notificationIds.push(retryOneId);
+
+    const retryTwoTime = addMinutesToSchedule(
+      schedule.hour,
+      schedule.minute,
+      10
+    );
+
+    const retryTwoId = await scheduleMedicineReminder({
+      medicineId,
+      medicineName,
+      scheduleIndex: index,
+      reminderAttempt: 2,
+      title: `⚠️ Último aviso: ${medicineName}`,
+      body: `Registra tu dosis de ${medicineName} si ya la tomaste.`,
+      hour: retryTwoTime.hour,
+      minute: retryTwoTime.minute,
+    });
+
+    notificationIds.push(retryTwoId);
   }
 
   console.log(
-    `Recordatorios programados para ${medicineName}:`,
+    `Recordatorios + reintentos programados para ${medicineName}:`,
     notificationIds.length
   );
 

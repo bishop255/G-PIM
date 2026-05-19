@@ -25,6 +25,8 @@ import {
   registerMissedMedicineDose,
 } from '../../services/medicineTakenService';
 
+import { cancelPatientDoseReminders } from '../../services/patientReminderService';
+
 const TakeMedicineScreen = ({ patientId, onBack }) => {
   const { medicines, loading } = useInventory(patientId);
 
@@ -169,15 +171,21 @@ const TakeMedicineScreen = ({ patientId, onBack }) => {
         source: 'manual',
       });
 
-      if (!result.ok) {
-        Alert.alert('Aviso', result.message);
-        return;
-      }
+    if (!result.ok) {
+      Alert.alert('Aviso', result.message);
+      return;
+    }
 
-      Alert.alert(
-        'Dosis registrada',
-        `${item.medicine.name} fue registrado correctamente.`
-      );
+    await cancelPatientDoseReminders({
+      patientId,
+      medicineId: item.medicine.id,
+      scheduleIndex: item.scheduleIndex,
+    });
+
+    Alert.alert(
+      'Dosis registrada',
+      `${item.medicine.name} fue registrado correctamente.`
+    );
     } catch (error) {
       console.error(error);
       Alert.alert('Error', 'No se pudo registrar la dosis.');

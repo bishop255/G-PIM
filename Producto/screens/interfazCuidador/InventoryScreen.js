@@ -30,6 +30,7 @@ const InventoryScreen = ({
   onLogout,
   patientId,
   onLinkPatientPress,
+  onDashboardPress,
 }) => {
   const [search, setSearch] = useState('');
   const [menuVisible, setMenuVisible] = useState(false);
@@ -236,10 +237,10 @@ const InventoryScreen = ({
           </Text>
         </View>
 
-        <TouchableOpacity>
+        <TouchableOpacity onPress={onDashboardPress}>
           <Ionicons
-            name="notifications-outline"
-            size={24}
+            name="analytics-outline"
+            size={26}
             color={colors.text}
           />
         </TouchableOpacity>
