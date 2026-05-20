@@ -10,6 +10,7 @@ import {
   StatusBar,
 } from 'react-native';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { collection, onSnapshot } from 'firebase/firestore';
 
@@ -26,6 +27,8 @@ import {
 } from '../../services/medicineTakenService';
 
 import { cancelPatientDoseReminders } from '../../services/patientReminderService';
+
+const getReprogramPauseKey = (patientId) => `pauseReminderReprogram_${patientId}`;
 
 const TakeMedicineScreen = ({ patientId, onBack }) => {
   const { medicines, loading } = useInventory(patientId);
@@ -91,6 +94,12 @@ const TakeMedicineScreen = ({ patientId, onBack }) => {
                 medicineId: medicine.id,
                 scheduleIndex: index,
               });
+
+              await cancelPatientDoseReminders({
+                patientId,
+                medicineId: medicine.id,
+                scheduleIndex: index,
+              });
             }
           }
         }
@@ -152,17 +161,30 @@ const TakeMedicineScreen = ({ patientId, onBack }) => {
     });
 
     return list.sort((a, b) => {
-      const aTime = a.schedule.hour * 60 + a.schedule.minute;
-      const bTime = b.schedule.hour * 60 + b.schedule.minute;
+      const aTime = Number(a.schedule.hour) * 60 + Number(a.schedule.minute);
+      const bTime = Number(b.schedule.hour) * 60 + Number(b.schedule.minute);
       return aTime - bTime;
     });
   }, [medicines, takenDoses]);
+
+  const pauseReminderReprogramming = async () => {
+    if (!patientId) return;
+
+    const pauseUntil = Date.now() + 15000;
+
+    await AsyncStorage.setItem(
+      getReprogramPauseKey(patientId),
+      String(pauseUntil)
+    );
+  };
 
   const handleTakeDose = async (item) => {
     if (item.status !== 'available') return;
 
     try {
       setSavingDoseId(item.doseId);
+
+      await pauseReminderReprogramming();
 
       const result = await registerMedicineDoseTaken({
         patientId,
@@ -171,21 +193,21 @@ const TakeMedicineScreen = ({ patientId, onBack }) => {
         source: 'manual',
       });
 
-    if (!result.ok) {
-      Alert.alert('Aviso', result.message);
-      return;
-    }
+      if (!result.ok) {
+        Alert.alert('Aviso', result.message);
+        return;
+      }
 
-    await cancelPatientDoseReminders({
-      patientId,
-      medicineId: item.medicine.id,
-      scheduleIndex: item.scheduleIndex,
-    });
+      await cancelPatientDoseReminders({
+        patientId,
+        medicineId: item.medicine.id,
+        scheduleIndex: item.scheduleIndex,
+      });
 
-    Alert.alert(
-      'Dosis registrada',
-      `${item.medicine.name} fue registrado correctamente.`
-    );
+      Alert.alert(
+        'Dosis registrada',
+        `${item.medicine.name} fue registrado correctamente.`
+      );
     } catch (error) {
       console.error(error);
       Alert.alert('Error', 'No se pudo registrar la dosis.');

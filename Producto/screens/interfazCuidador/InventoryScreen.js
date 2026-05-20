@@ -31,6 +31,7 @@ const InventoryScreen = ({
   patientId,
   onLinkPatientPress,
   onDashboardPress,
+  onEmergencyHistoryPress,
 }) => {
   const [search, setSearch] = useState('');
   const [menuVisible, setMenuVisible] = useState(false);
@@ -380,6 +381,7 @@ const InventoryScreen = ({
             setMenuVisible(false);
 
             if (screen === 'history') onHistoryPress();
+            if (screen === 'emergencyHistory') onEmergencyHistoryPress();
             if (screen === 'profile') onProfilePress();;
             if (screen === 'settings') onSettingsPress();
             if (screen === 'linkPatient') onLinkPatientPress();

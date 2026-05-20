@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 import { Alert } from 'react-native';
 import { auth, db } from './database/firebaseConfig';
@@ -41,6 +41,7 @@ import HistoryScreen from './screens/interfazCuidador/HistoryScreen';
 import SettingsScreen from './screens/interfazCuidador/SettingsScreen';
 import ProfileScreen from './screens/interfazCuidador/ProfileScreen';
 import DashboardScreen from './screens/interfazCuidador/DashboardScreen';
+import EmergencyHistoryScreen from './screens/interfazCuidador/EmergencyHistoryScreen';
 
 
 export default function App() {
@@ -49,6 +50,8 @@ export default function App() {
   const [settings, setSettings] = useState({ darkMode: false, largeText: false})
   const [patientId, setPatientId] = useState(null);
   const [adultPatientData, setAdultPatientData] = useState(null);
+  const lastReminderFingerprintRef = useRef(null);
+  const schedulingRemindersRef = useRef(false);
 
   useEffect(() => {
   const subscription = Notifications.addNotificationResponseReceivedListener(
@@ -242,32 +245,68 @@ useEffect(() => {
     return unsubscribe;
   }, [patientId, screen]);
 
-  useEffect(() => {
-    const isAdultPatientFlow =
-      screen === 'adultoMayorHome' ||
-      screen === 'takeMedicine' ||
-      screen === 'adultoMayorEmergency';
+useEffect(() => {
+  const isAdultPatientFlow =
+    screen === 'adultoMayorHome' ||
+    screen === 'takeMedicine' ||
+    screen === 'adultoMayorEmergency';
 
-    if (!patientId || !isAdultPatientFlow) return;
+  if (!patientId || !isAdultPatientFlow) return;
 
-    const inventoryRef = collection(db, 'pacientes', patientId, 'inventario');
+  const inventoryRef = collection(db, 'pacientes', patientId, 'inventario');
 
-    const unsubscribe = onSnapshot(
-      inventoryRef,
-      async () => {
-        console.log(
-          'Inventario actualizado. Reprogramando recordatorios del paciente...'
-        );
+  const buildReminderFingerprint = (snapshot) => {
+    const reminderData = snapshot.docs
+      .map((docItem) => {
+        const data = docItem.data();
 
-        await schedulePatientMedicineReminders(patientId);
-      },
-      (error) => {
-        console.error('Error escuchando cambios del inventario:', error);
+        return {
+          id: docItem.id,
+          name: data.name || '',
+          reminderEnabled: data.reminderEnabled === true,
+          dailyDose: Number(data.dailyDose || 0),
+          schedules: Array.isArray(data.schedules) ? data.schedules : [],
+        };
+      })
+      .sort((a, b) => a.id.localeCompare(b.id));
+
+    return JSON.stringify(reminderData);
+  };
+
+  const unsubscribe = onSnapshot(
+    inventoryRef,
+    async (snapshot) => {
+      const newFingerprint = buildReminderFingerprint(snapshot);
+
+      if (lastReminderFingerprintRef.current === newFingerprint) {
+        console.log('Inventario cambió, pero los horarios siguen iguales. No se reprograma.');
+        return;
       }
-    );
 
-    return unsubscribe;
-  }, [patientId, screen]);
+      if (schedulingRemindersRef.current) {
+        console.log('Ya se están reprogramando recordatorios. Se omite este ciclo.');
+        return;
+      }
+
+      try {
+        schedulingRemindersRef.current = true;
+        lastReminderFingerprintRef.current = newFingerprint;
+
+        console.log('Horarios modificados. Reprogramando recordatorios del paciente...');
+        await schedulePatientMedicineReminders(patientId);
+      } catch (error) {
+        console.error('Error reprogramando recordatorios:', error);
+      } finally {
+        schedulingRemindersRef.current = false;
+      }
+    },
+    (error) => {
+      console.error('Error escuchando cambios del inventario:', error);
+    }
+  );
+
+  return unsubscribe;
+}, [patientId, screen]);
 
 
   const updateSettings = (newSettings) => {
@@ -535,6 +574,7 @@ const handleLogout = async () => {
           setSelectedMedicine(medicine);
           setScreen('medicineDetail');
         }}
+        onEmergencyHistoryPress={() => setScreen('emergencyHistory')}
         onHistoryPress={() => setScreen('history')}
         onSettingsPress={() => setScreen('settings')}
         onProfilePress={() => setScreen('profile')}
@@ -660,6 +700,17 @@ const handleLogout = async () => {
       onUpdateSettings={updateSettings}
       />
     )
+  }
+
+  // Historial Emergencias
+  if (screen === 'emergencyHistory') {
+    return (
+      <EmergencyHistoryScreen
+        patientId={patientId}
+        settings={settings}
+        onBack={() => setScreen('inventory')}
+      />
+    );
   }
 
 
