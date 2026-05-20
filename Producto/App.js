@@ -30,6 +30,7 @@ import HomeScreen from './screens/interfazAdultoMayor/HomeScreen';
 import MyMedicinesOffersScreen from './screens/interfazCuidador/MyMedicinesOffersScreen';
 import EmergencyScreen from './screens/interfazAdultoMayor/EmergencyScreen';
 import TakeMedicineScreen from './screens/interfazAdultoMayor/TakeMedicineScreen';
+import PatientLowStockScreen from './screens/interfazAdultoMayor/PatientLowStockScreen';
 
 import LinkPatientScreen from './screens/interfazCuidador/LinkPatientScreen';
 import InventoryScreen from './screens/interfazCuidador/InventoryScreen';
@@ -525,18 +526,16 @@ const handleLogout = async () => {
 }
 
   if (screen === 'adultoMayorHome') {
-      return (
-      <HomeScreen
-        patientData={adultPatientData}
-        onBack={() => setScreen('select')}
-        onTakeMedicine={() => setScreen('takeMedicine')}
-        onLowStock={() =>
-          Alert.alert('Próximamente', 'Aquí irá la opción de stock bajo')
-        }
-        onEmergency={() => setScreen('adultoMayorEmergency')}
-      />
-    );
-  }
+    return (
+    <HomeScreen
+      patientData={adultPatientData}
+      onBack={() => setScreen('select')}
+      onTakeMedicine={() => setScreen('takeMedicine')}
+      onLowStock={() => setScreen('patientLowStock')}
+      onEmergency={() => setScreen('adultoMayorEmergency')}
+    />
+  );
+}
 
   if (screen === 'adultoMayorEmergency') {
     return (
@@ -556,6 +555,17 @@ const handleLogout = async () => {
       />
     );
 }
+
+// Pantalla para reportar al cuidador que un medicamento está por agotarse
+  if (screen === 'patientLowStock') {
+    return (
+      <PatientLowStockScreen
+        patientId={patientId}
+        settings={settings}
+        onBack={() => setScreen('adultoMayorHome')}
+      />
+    );
+  }
 
   //---------- Inicio ----------------
 
