@@ -42,6 +42,7 @@ import MedicineDetailScreen from './screens/interfazCuidador/MedicineDetailScree
 import HistoryScreen from './screens/interfazCuidador/HistoryScreen';
 import SettingsScreen from './screens/interfazCuidador/SettingsScreen';
 import ProfileScreen from './screens/interfazCuidador/ProfileScreen';
+import EditProfileScreen from './screens/interfazCuidador/EditProfileScreen';
 import DashboardScreen from './screens/interfazCuidador/DashboardScreen';
 import EmergencyHistoryScreen from './screens/interfazCuidador/EmergencyHistoryScreen';
 
@@ -701,6 +702,18 @@ const handleLogout = async () => {
         patientId={patientId}
         onBack={() => setScreen('inventory')}
         onLogout={handleLogout}
+        onEditProfile={() => setScreen('editProfile')}
+      />
+    );
+  }
+
+  if (screen === 'editProfile') {
+    return (
+      <EditProfileScreen
+        settings={settings}
+        patientId={patientId}
+        onBack={() => setScreen('profile')}
+        onSaved={() => setScreen('profile')}
       />
     );
   }

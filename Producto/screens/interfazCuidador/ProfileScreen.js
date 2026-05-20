@@ -18,7 +18,7 @@ import { getTheme } from '../../theme/theme';
 import { auth, db } from '../../database/firebaseConfig';
 
 // El prop "onBack" permite regresar al inventario
-const ProfileScreen = ({ onBack, settings, onLogout, patientId }) => {
+const ProfileScreen = ({ onBack, settings, onLogout, patientId, onEditProfile }) => {
   const { colors, fontSizes } = getTheme(settings);
 
   const [caregiverData, setCaregiverData] = useState(null);
@@ -269,12 +269,7 @@ const ProfileScreen = ({ onBack, settings, onLogout, patientId }) => {
         {/* BOTÓN EDITAR */}
         <TouchableOpacity
           style={styles.editButton}
-          onPress={() =>
-            Alert.alert(
-              'Próximamente',
-              'Aquí podrás editar el perfil del cuidador y del paciente.'
-            )
-          }
+          onPress={onEditProfile}
         >
           <Ionicons
             name="create-outline"
