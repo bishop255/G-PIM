@@ -9,6 +9,7 @@ import {
   Alert,
 } from 'react-native';
 
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
@@ -34,6 +35,8 @@ const AlertsScreen = ({
   onGoProfile,
   patientId,
 }) => {
+  const insets = useSafeAreaInsets();
+
   const { medicines, loading } = useInventory(patientId);
   const { colors, fontSizes } = getTheme(settings);
 
@@ -42,7 +45,6 @@ const AlertsScreen = ({
 
   useEffect(() => {
     const user = auth.currentUser;
-
     if (!user) return;
 
     const alertsRef = collection(db, 'usuarios', user.uid, 'alertas');
@@ -163,7 +165,9 @@ const AlertsScreen = ({
         medicineName: item.name,
         title: item.alertInfo.title,
         message: item.alertInfo.message,
-        detail: `Stock: ${item.currentStock ?? 0} ${getStockUnit(item)} · Mínimo: ${item.minStock ?? 0} ${getStockUnit(item)}`,
+        detail: `Stock: ${item.currentStock ?? 0} ${getStockUnit(
+          item
+        )} · Mínimo: ${item.minStock ?? 0} ${getStockUnit(item)}`,
         color: item.alertInfo.color,
         background: item.alertInfo.background,
         icon: item.alertInfo.icon,
@@ -185,7 +189,9 @@ const AlertsScreen = ({
           message:
             item.message ||
             `${item.patientName || 'El paciente'} solicitó ayuda de emergencia.`,
-          detail: `${item.patientName || 'Paciente'} · ${formatDateTime(item.createdAt)}`,
+          detail: `${item.patientName || 'Paciente'} · ${formatDateTime(
+            item.createdAt
+          )}`,
           color: '#E74C3C',
           background: '#FDECEC',
           icon: 'warning',
@@ -246,9 +252,7 @@ const AlertsScreen = ({
   }, [stockAlerts, eventAlerts]);
 
   const criticalCount = stockAlerts.filter(
-    (item) =>
-      item.title === 'Sin stock' ||
-      item.title === 'Se agota muy pronto'
+    (item) => item.title === 'Sin stock' || item.title === 'Se agota muy pronto'
   ).length;
 
   const handleMarkEventsAsRead = async () => {
@@ -270,9 +274,7 @@ const AlertsScreen = ({
               for (const item of caregiverAlerts) {
                 await updateDoc(
                   doc(db, 'usuarios', user.uid, 'alertas', item.id),
-                  {
-                    read: true,
-                  }
+                  { read: true }
                 );
               }
             } catch (error) {
@@ -296,10 +298,7 @@ const AlertsScreen = ({
 
         <View style={styles.alertContent}>
           <Text
-            style={[
-              styles.medicineName,
-              { fontSize: fontSizes.normal + 4 },
-            ]}
+            style={[styles.medicineName, { fontSize: fontSizes.normal + 4 }]}
           >
             {item.medicineName}
           </Text>
@@ -313,12 +312,7 @@ const AlertsScreen = ({
             {item.title}
           </Text>
 
-          <Text
-            style={[
-              styles.alertMessage,
-              { fontSize: fontSizes.normal },
-            ]}
-          >
+          <Text style={[styles.alertMessage, { fontSize: fontSizes.normal }]}>
             {item.message}
           </Text>
 
@@ -331,178 +325,195 @@ const AlertsScreen = ({
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={onBack}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      edges={['top', 'left', 'right']}
+    >
+      <View style={styles.content}>
+        <View style={styles.topBar}>
+          <TouchableOpacity onPress={onBack}>
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          </TouchableOpacity>
 
-        <Text
-          style={[
-            styles.logoText,
-            { color: colors.text, fontSize: fontSizes.header },
-          ]}
-        >
-          Alertas
-        </Text>
-
-        <View style={styles.bellBox}>
-          <MaterialCommunityIcons
-            name="bell-alert-outline"
-            size={26}
-            color="#E74C3C"
-          />
-
-          {allAlerts.length > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{allAlerts.length}</Text>
-            </View>
-          )}
-        </View>
-      </View>
-
-      <Text
-        style={[
-          styles.header,
-          { color: colors.text, fontSize: fontSizes.title },
-        ]}
-      >
-        Centro de alertas
-      </Text>
-
-      <Text
-        style={[
-          styles.subtitle,
-          { color: colors.secondaryText, fontSize: fontSizes.subtitle },
-        ]}
-      >
-        Stock activo y eventos médicos no leídos.
-      </Text>
-
-      {eventAlerts.length > 0 && (
-        <TouchableOpacity
-          style={styles.markReadButton}
-          onPress={handleMarkEventsAsRead}
-          disabled={markingRead}
-        >
-          <Ionicons name="checkmark-done-outline" size={21} color="#FFFFFF" />
-          <Text style={styles.markReadText}>
-            {markingRead ? 'Marcando...' : 'Marcar eventos como leídos'}
-          </Text>
-        </TouchableOpacity>
-      )}
-
-      {criticalCount > 0 && (
-        <View style={styles.criticalBanner}>
-          <Ionicons name="warning" size={22} color="#FFFFFF" />
           <Text
             style={[
-              styles.criticalBannerText,
-              { fontSize: fontSizes.normal },
-            ]}
-          >
-            Tienes {criticalCount} alerta(s) crítica(s) de stock.
-          </Text>
-        </View>
-      )}
-
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" />
-          <Text
-            style={[
-              styles.loadingText,
-              { color: colors.secondaryText, fontSize: fontSizes.normal },
-            ]}
-          >
-            Revisando alertas...
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          data={allAlerts}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Ionicons
-                name="checkmark-circle-outline"
-                size={64}
-                color="#27AE60"
-              />
-              <Text
-                style={[
-                  styles.emptyTitle,
-                  { fontSize: fontSizes.header + 2 },
-                ]}
-              >
-                Todo en orden
-              </Text>
-              <Text
-                style={[
-                  styles.emptyText,
-                  { color: colors.secondaryText, fontSize: fontSizes.normal },
-                ]}
-              >
-                No hay alertas pendientes por ahora.
-              </Text>
-            </View>
-          }
-        />
-      )}
-
-      <View style={[styles.bottomNav, { backgroundColor: colors.card }]}>
-        <TouchableOpacity style={styles.navItem} onPress={onGoInventory}>
-          <Ionicons name="home-outline" size={24} color={colors.text} />
-          <Text
-            style={[
-              styles.navText,
-              { color: colors.text, fontSize: fontSizes.small },
-            ]}
-          >
-            Inicio
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="alert-circle" size={24} color="#E74C3C" />
-          <Text
-            style={[
-              styles.navText,
-              { color: '#E74C3C', fontSize: fontSizes.small },
+              styles.logoText,
+              { color: colors.text, fontSize: fontSizes.header },
             ]}
           >
             Alertas
           </Text>
-        </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} onPress={onGoOffers}>
-          <Ionicons name="cart-outline" size={24} color="#F39C12" />
-          <Text
-            style={[
-              styles.navText,
-              { color: '#F39C12', fontSize: fontSizes.small },
-            ]}
-          >
-            Ofertas
-          </Text>
-        </TouchableOpacity>
+          <View style={styles.bellBox}>
+            <MaterialCommunityIcons
+              name="bell-alert-outline"
+              size={26}
+              color="#E74C3C"
+            />
 
-        <TouchableOpacity style={styles.navItem} onPress={onGoProfile}>
-          <Ionicons name="person-outline" size={24} color={colors.text} />
-          <Text
-            style={[
-              styles.navText,
-              { color: colors.text, fontSize: fontSizes.small },
-            ]}
+            {allAlerts.length > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{allAlerts.length}</Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        <Text
+          style={[
+            styles.header,
+            { color: colors.text, fontSize: fontSizes.title },
+          ]}
+        >
+          Centro de alertas
+        </Text>
+
+        <Text
+          style={[
+            styles.subtitle,
+            { color: colors.secondaryText, fontSize: fontSizes.subtitle },
+          ]}
+        >
+          Stock activo y eventos médicos no leídos.
+        </Text>
+
+        {eventAlerts.length > 0 && (
+          <TouchableOpacity
+            style={styles.markReadButton}
+            onPress={handleMarkEventsAsRead}
+            disabled={markingRead}
           >
-            Perfil
-          </Text>
-        </TouchableOpacity>
+            <Ionicons name="checkmark-done-outline" size={21} color="#FFFFFF" />
+            <Text style={styles.markReadText}>
+              {markingRead ? 'Marcando...' : 'Marcar eventos como leídos'}
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {criticalCount > 0 && (
+          <View style={styles.criticalBanner}>
+            <Ionicons name="warning" size={22} color="#FFFFFF" />
+            <Text
+              style={[
+                styles.criticalBannerText,
+                { fontSize: fontSizes.normal },
+              ]}
+            >
+              Tienes {criticalCount} alerta(s) crítica(s) de stock.
+            </Text>
+          </View>
+        )}
+
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" />
+            <Text
+              style={[
+                styles.loadingText,
+                { color: colors.secondaryText, fontSize: fontSizes.normal },
+              ]}
+            >
+              Revisando alertas...
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={allAlerts}
+            keyExtractor={(item) => item.id}
+            renderItem={renderItem}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={[
+              styles.listContent,
+              { paddingBottom: 100 + insets.bottom },
+            ]}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Ionicons
+                  name="checkmark-circle-outline"
+                  size={64}
+                  color="#27AE60"
+                />
+                <Text
+                  style={[
+                    styles.emptyTitle,
+                    { fontSize: fontSizes.header + 2 },
+                  ]}
+                >
+                  Todo en orden
+                </Text>
+                <Text
+                  style={[
+                    styles.emptyText,
+                    { color: colors.secondaryText, fontSize: fontSizes.normal },
+                  ]}
+                >
+                  No hay alertas pendientes por ahora.
+                </Text>
+              </View>
+            }
+          />
+        )}
+
+        <View
+          style={[
+            styles.bottomNav,
+            {
+              backgroundColor: colors.card,
+              height: 75 + insets.bottom,
+              paddingBottom: insets.bottom,
+            },
+          ]}
+        >
+          <TouchableOpacity style={styles.navItem} onPress={onGoInventory}>
+            <Ionicons name="home-outline" size={24} color={colors.text} />
+            <Text
+              style={[
+                styles.navText,
+                { color: colors.text, fontSize: fontSizes.small },
+              ]}
+            >
+              Inicio
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.navItem}>
+            <Ionicons name="alert-circle" size={24} color="#E74C3C" />
+            <Text
+              style={[
+                styles.navText,
+                { color: '#E74C3C', fontSize: fontSizes.small },
+              ]}
+            >
+              Alertas
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.navItem} onPress={onGoOffers}>
+            <Ionicons name="cart-outline" size={24} color="#F39C12" />
+            <Text
+              style={[
+                styles.navText,
+                { color: '#F39C12', fontSize: fontSizes.small },
+              ]}
+            >
+              Ofertas
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.navItem} onPress={onGoProfile}>
+            <Ionicons name="person-outline" size={24} color={colors.text} />
+            <Text
+              style={[
+                styles.navText,
+                { color: colors.text, fontSize: fontSizes.small },
+              ]}
+            >
+              Perfil
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -511,8 +522,10 @@ export default AlertsScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  content: {
+    flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 55,
   },
   topBar: {
     flexDirection: 'row',
@@ -648,7 +661,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: 75,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     flexDirection: 'row',

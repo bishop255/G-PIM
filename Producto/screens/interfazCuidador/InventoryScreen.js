@@ -3,29 +3,31 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
-  TextInput,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  FlatList,
+  TextInput,
   Image,
 } from 'react-native';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+
 import { getTheme } from '../../theme/theme';
 import { useInventory } from '../../hook/useInventory';
 import SideMenu from '../../components/SideMenu';
 
-
-const InventoryScreen = ({ 
-  settings, 
-  onAddPress, 
-  onEditPress, 
-  onAlertsPress, 
-  onOffersPress, 
-  onMedicinePress, 
-  onHistoryPress, 
-  onSettingsPress, 
+const InventoryScreen = ({
+  settings,
+  onAddPress,
+  onEditPress,
+  onAlertsPress,
+  onOffersPress,
+  onMedicinePress,
+  onHistoryPress,
+  onSettingsPress,
   onProfilePress,
   onLogout,
   patientId,
@@ -33,6 +35,8 @@ const InventoryScreen = ({
   onDashboardPress,
   onEmergencyHistoryPress,
 }) => {
+  const insets = useSafeAreaInsets();
+
   const [search, setSearch] = useState('');
   const [menuVisible, setMenuVisible] = useState(false);
 
@@ -55,7 +59,11 @@ const InventoryScreen = ({
   const handleOptions = (item) => {
     Alert.alert(item.name, '¿Qué deseas hacer?', [
       { text: 'Editar', onPress: () => onEditPress(item) },
-      { text: 'Eliminar', style: 'destructive', onPress: () => confirmDelete(item.id) },
+      {
+        text: 'Eliminar',
+        style: 'destructive',
+        onPress: () => confirmDelete(item.id),
+      },
       { text: 'Cancelar', style: 'cancel' },
     ]);
   };
@@ -63,9 +71,11 @@ const InventoryScreen = ({
   const getPriorityValue = (item) => {
     const currentStock = Number(item.currentStock || 0);
     const minStock = Number(item.minStock || 0);
+
     if (currentStock <= 0) return 1;
     if (currentStock <= minStock) return 2;
     if (currentStock <= minStock * 1.5) return 3;
+
     return 4;
   };
 
@@ -75,12 +85,10 @@ const InventoryScreen = ({
       .sort((a, b) => getPriorityValue(a) - getPriorityValue(b));
   }, [medicines, search]);
 
-  // Funciones para calcular días restantes y estado de stock
   const getRemainingDays = (item) => {
     const currentStock = Number(item.currentStock || 0);
     const dailyDose = Number(item.dailyDose || 0);
     const doseAmount = Number(item.doseAmount || 1);
-
     const dailyConsumption = dailyDose * doseAmount;
 
     if (currentStock <= 0) return 0;
@@ -89,41 +97,58 @@ const InventoryScreen = ({
     return Math.floor(currentStock / dailyConsumption);
   };
 
-
   const getStockStatus = (item) => {
     const currentStock = Number(item.currentStock || 0);
     const minStock = Number(item.minStock || 0);
 
     if (currentStock <= 0) {
-      return { label: 'Sin stock', color: '#E74C3C', background: '#FDECEC', iconColor: '#E74C3C' };
+      return {
+        label: 'Sin stock',
+        color: '#E74C3C',
+        background: '#FDECEC',
+        iconColor: '#E74C3C',
+      };
     }
+
     if (currentStock <= minStock) {
-      return { label: 'Crítico', color: '#F39C12', background: '#FFF4E5', iconColor: '#F39C12' };
+      return {
+        label: 'Crítico',
+        color: '#F39C12',
+        background: '#FFF4E5',
+        iconColor: '#F39C12',
+      };
     }
+
     if (currentStock <= minStock * 1.5) {
-      return { label: 'Bajo stock', color: '#D68910', background: '#FFF8E1', iconColor: '#D68910' };
+      return {
+        label: 'Bajo stock',
+        color: '#D68910',
+        background: '#FFF8E1',
+        iconColor: '#D68910',
+      };
     }
-    return { label: 'Suficiente', color: '#27AE60', background: '#EAF8EE', iconColor: '#27AE60' };
+
+    return {
+      label: 'Suficiente',
+      color: '#27AE60',
+      background: '#EAF8EE',
+      iconColor: '#27AE60',
+    };
   };
 
-  // Obtener ícono según categoría
   const getCategoryIcon = (category) => {
     switch (category) {
       case 'Tableta / Cápsula':
       case 'Tableta':
         return 'pill';
-
       case 'Jarabe / Gotas':
       case 'Jarabe':
         return 'bottle-tonic-plus';
-
       case 'Inyección':
         return 'needle';
-
       case 'Insumo médico':
       case 'Otro':
         return 'medical-bag';
-
       default:
         return 'pill';
     }
@@ -216,162 +241,181 @@ const InventoryScreen = ({
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => setMenuVisible(true)}>
-          <Ionicons name="menu" size={24} color={colors.text} />
-        </TouchableOpacity>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      edges={['top', 'left', 'right']}
+    >
+      <View style={styles.content}>
+        <View style={styles.topBar}>
+          <TouchableOpacity onPress={() => setMenuVisible(true)}>
+            <Ionicons name="menu" size={24} color={colors.text} />
+          </TouchableOpacity>
 
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('../../assets/logo.png')}
-            style={styles.logoIcon}
-            resizeMode="contain"
-          />
-          <Text
-            style={[
-              styles.logoText,
-              { color: colors.text, fontSize: fontSizes.header },
-            ]}
-          >
-            G-PIM
-          </Text>
+          <View style={styles.logoContainer}>
+            <Image
+              source={require('../../assets/logo.png')}
+              style={styles.logoIcon}
+              resizeMode="contain"
+            />
+            <Text
+              style={[
+                styles.logoText,
+                { color: colors.text, fontSize: fontSizes.header },
+              ]}
+            >
+              G-PIM
+            </Text>
+          </View>
+
+          <TouchableOpacity onPress={onDashboardPress}>
+            <Ionicons name="analytics-outline" size={26} color={colors.text} />
+          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity onPress={onDashboardPress}>
-          <Ionicons
-            name="analytics-outline"
-            size={26}
-            color={colors.text}
-          />
-        </TouchableOpacity>
-      </View>
-
-      <Text
-        style={[
-          styles.header,
-          { color: colors.text, fontSize: fontSizes.title },
-        ]}
-      >
-        Inventario Médico
-      </Text>
-
-      <View style={[styles.searchContainer, { backgroundColor: colors.card }]}>
-        <Ionicons
-          name="search"
-          size={20}
-          color={colors.secondaryText}
-          style={styles.searchIcon}
-        />
-        <TextInput
-          placeholder="Buscar medicamento..."
-          placeholderTextColor={colors.secondaryText}
+        <Text
           style={[
-            styles.searchInput,
-            { color: colors.text, fontSize: fontSizes.normal },
+            styles.header,
+            { color: colors.text, fontSize: fontSizes.title },
           ]}
-          value={search}
-          onChangeText={setSearch}
-        />
-      </View>
-
-      {/* LISTA O CARGANDO */}
-      {loading ? (
-        <View style={styles.centerContent}>
-          <ActivityIndicator size="large" />
-          <Text
-            style={[
-              styles.loadingText,
-              { color: colors.secondaryText, fontSize: fontSizes.normal },
-            ]}
-          >
-            Cargando inventario...
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          data={filteredMedicines}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
-            <View style={styles.centerContent}>
-              <Ionicons
-                name="medkit-outline"
-                size={48}
-                color={colors.secondaryText}
-              />
-              <Text
-                style={[
-                  styles.emptyText,
-                  { color: colors.secondaryText, fontSize: fontSizes.normal },
-                ]}
-              >
-                No hay medicamentos registrados
-              </Text>
-            </View>
-          }
-        />
-      )}
-
-      {/* BOTÓN FLOTANTE AÑADIR */}
-      <TouchableOpacity style={styles.addButton} onPress={onAddPress}>
-        <Ionicons name="add" size={24} color="#FFFFFF" />
-        <Text style={[styles.addButtonText, { fontSize: fontSizes.button }]}>
-          Añadir medicamento
+        >
+          Inventario Médico
         </Text>
-      </TouchableOpacity>
 
-      <View style={[styles.bottomNav, { backgroundColor: colors.card }]}>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="home" size={24} color="#42B65A" />
-          <Text
+        <View style={[styles.searchContainer, { backgroundColor: colors.card }]}>
+          <Ionicons
+            name="search"
+            size={20}
+            color={colors.secondaryText}
+            style={styles.searchIcon}
+          />
+
+          <TextInput
+            placeholder="Buscar medicamento..."
+            placeholderTextColor={colors.secondaryText}
             style={[
-              styles.navText,
-              { color: '#42B65A', fontSize: fontSizes.small },
+              styles.searchInput,
+              { color: colors.text, fontSize: fontSizes.normal },
             ]}
-          >
-            Inicio
+            value={search}
+            onChangeText={setSearch}
+          />
+        </View>
+
+        {loading ? (
+          <View style={styles.centerContent}>
+            <ActivityIndicator size="large" />
+            <Text
+              style={[
+                styles.loadingText,
+                { color: colors.secondaryText, fontSize: fontSizes.normal },
+              ]}
+            >
+              Cargando inventario...
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={filteredMedicines}
+            keyExtractor={(item) => item.id}
+            renderItem={renderItem}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={[
+              styles.listContent,
+              { paddingBottom: 190 + insets.bottom },
+            ]}
+            ListEmptyComponent={
+              <View style={styles.centerContent}>
+                <Ionicons
+                  name="medkit-outline"
+                  size={48}
+                  color={colors.secondaryText}
+                />
+                <Text
+                  style={[
+                    styles.emptyText,
+                    { color: colors.secondaryText, fontSize: fontSizes.normal },
+                  ]}
+                >
+                  No hay medicamentos registrados
+                </Text>
+              </View>
+            }
+          />
+        )}
+
+        <TouchableOpacity
+          style={[
+            styles.addButton,
+            {
+              bottom: 90 + insets.bottom,
+            },
+          ]}
+          onPress={onAddPress}
+        >
+          <Ionicons name="add" size={24} color="#FFFFFF" />
+          <Text style={[styles.addButtonText, { fontSize: fontSizes.button }]}>
+            Añadir medicamento
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} onPress={onAlertsPress}>
-          <Ionicons name="alert-circle-outline" size={24} color="#E74C3C" />
-          <Text
-            style={[
-              styles.navText,
-              { color: '#E74C3C', fontSize: fontSizes.small },
-            ]}
-          >
-            Alertas
-          </Text>
-        </TouchableOpacity>
+        <View
+          style={[
+            styles.bottomNav,
+            {
+              backgroundColor: colors.card,
+              height: 75 + insets.bottom,
+              paddingBottom: insets.bottom,
+            },
+          ]}
+        >
+          <TouchableOpacity style={styles.navItem}>
+            <Ionicons name="home" size={24} color="#42B65A" />
+            <Text
+              style={[
+                styles.navText,
+                { color: '#42B65A', fontSize: fontSizes.small },
+              ]}
+            >
+              Inicio
+            </Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} onPress={onOffersPress}>
-          <Ionicons name="cart-outline" size={24} color="#F39C12" />
-          <Text
-            style={[
-              styles.navText,
-              { color: '#F39C12', fontSize: fontSizes.small },
-            ]}
-          >
-            Ofertas
-          </Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.navItem} onPress={onAlertsPress}>
+            <Ionicons name="alert-circle-outline" size={24} color="#E74C3C" />
+            <Text
+              style={[
+                styles.navText,
+                { color: '#E74C3C', fontSize: fontSizes.small },
+              ]}
+            >
+              Alertas
+            </Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} onPress={onProfilePress}>
-          <Ionicons name="person-outline" size={24} color={colors.text} />
-          <Text
-            style={[
-              styles.navText,
-              { color: colors.text, fontSize: fontSizes.small },
-            ]}
-          >
-            Perfil
-          </Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity style={styles.navItem} onPress={onOffersPress}>
+            <Ionicons name="cart-outline" size={24} color="#F39C12" />
+            <Text
+              style={[
+                styles.navText,
+                { color: '#F39C12', fontSize: fontSizes.small },
+              ]}
+            >
+              Ofertas
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.navItem} onPress={onProfilePress}>
+            <Ionicons name="person-outline" size={24} color={colors.text} />
+            <Text
+              style={[
+                styles.navText,
+                { color: colors.text, fontSize: fontSizes.small },
+              ]}
+            >
+              Perfil
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         <SideMenu
           visible={menuVisible}
@@ -382,34 +426,36 @@ const InventoryScreen = ({
 
             if (screen === 'history') onHistoryPress();
             if (screen === 'emergencyHistory') onEmergencyHistoryPress();
-            if (screen === 'profile') onProfilePress();;
+            if (screen === 'profile') onProfilePress();
             if (screen === 'settings') onSettingsPress();
             if (screen === 'linkPatient') onLinkPatientPress();
+
             if (screen === 'logout') {
-              Alert.alert(
-                'Cerrar sesión',
-                '¿Seguro que deseas cerrar sesión?',
-                [
-                  { text: 'Cancelar', style: 'cancel' },
-                  {
-                    text: 'Cerrar sesión',
-                    style: 'destructive',
-                    onPress: onLogout,
-                  },
-                ]
-              );
+              Alert.alert('Cerrar sesión', '¿Seguro que deseas cerrar sesión?', [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                  text: 'Cerrar sesión',
+                  style: 'destructive',
+                  onPress: onLogout,
+                },
+              ]);
             }
           }}
         />
-    </View>
+      </View>
+    </SafeAreaView>
   );
 };
+
+export default InventoryScreen;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  content: {
+    flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 55,
   },
   topBar: {
     flexDirection: 'row',
@@ -442,10 +488,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
     elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
   },
   searchIcon: {
     marginRight: 10,
@@ -500,23 +542,10 @@ const styles = StyleSheet.create({
     padding: 6,
     marginLeft: 10,
   },
-  searchIcon: { marginRight: 10 },
-  searchInput: { flex: 1, fontSize: 16 },
-  listContent: { paddingBottom: 185 },
-  card: { borderRadius: 18, padding: 16, marginBottom: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  cardLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  iconBox: { width: 64, height: 64, borderRadius: 18, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center', marginRight: 14, borderWidth: 2 },
-  textBox: { flex: 1 },
-  productName: { fontSize: 17, fontWeight: '700', color: '#2D3436' },
-  productStock: { fontSize: 14, color: '#636E72', marginTop: 4 },
-  remainingDays: { fontSize: 14, color: '#4F5D75', marginTop: 4, fontWeight: '600' },
-  statusText: { fontSize: 13, fontWeight: '700', marginTop: 6 },
-  editButton: { padding: 6, marginLeft: 10 },
   addButton: {
     position: 'absolute',
     left: 20,
     right: 20,
-    bottom: 90,
     backgroundColor: '#42B65A',
     borderRadius: 16,
     paddingVertical: 15,
@@ -530,23 +559,17 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginLeft: 8,
   },
-  addButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700', marginLeft: 8 },
   bottomNav: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    height: 75,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
     elevation: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
   },
   navItem: {
     alignItems: 'center',
@@ -568,11 +591,4 @@ const styles = StyleSheet.create({
     marginTop: 12,
     textAlign: 'center',
   },
-  navItem: { alignItems: 'center', justifyContent: 'center' },
-  navText: { fontSize: 11, fontWeight: '700', color: '#2D3436', marginTop: 3 },
-  centerContent: { alignItems: 'center', justifyContent: 'center', marginTop: 60 },
-  loadingText: { marginTop: 10, color: '#636E72' },
-  emptyText: { marginTop: 12, fontSize: 15, color: '#636E72' },
 });
-
-export default InventoryScreen;

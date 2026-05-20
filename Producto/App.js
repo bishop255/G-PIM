@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Alert } from 'react-native';
 import { auth, db } from './database/firebaseConfig';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
@@ -47,7 +47,7 @@ import DashboardScreen from './screens/interfazCuidador/DashboardScreen';
 import EmergencyHistoryScreen from './screens/interfazCuidador/EmergencyHistoryScreen';
 
 
-export default function App() {
+function MainApp() {
   const [screen, setScreen] = useState('splash');
   const [selectedMedicine, setSelectedMedicine] = useState(null);
   const [settings, setSettings] = useState({ darkMode: false, largeText: false})
@@ -703,6 +703,10 @@ const handleLogout = async () => {
         onBack={() => setScreen('inventory')}
         onLogout={handleLogout}
         onEditProfile={() => setScreen('editProfile')}
+        onGoInventory={() => setScreen('inventory')}
+        onGoAlerts={() => setScreen('alerts')}
+        onGoOffers={() => setScreen('offers')}
+        onGoProfile={() => setScreen('profile')}
       />
     );
   }
@@ -754,6 +758,14 @@ const handleLogout = async () => {
   }
 
 
-
   return null;
 }
+
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <MainApp />
+    </SafeAreaProvider>
+  );
+}
+

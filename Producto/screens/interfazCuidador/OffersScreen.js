@@ -11,6 +11,7 @@ import {
   Linking,
 } from 'react-native';
 
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
@@ -28,6 +29,8 @@ const OffersScreen = ({
   onGoProfile,
   onGoMyMedicines,
 }) => {
+  const insets = useSafeAreaInsets();
+
   const { colors, fontSizes } = getTheme(settings);
   useInventory(patientId);
 
@@ -218,234 +221,251 @@ const OffersScreen = ({
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={onBack}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-
-        <Text
-          style={[
-            styles.logoText,
-            {
-              color: colors.text,
-              fontSize: fontSizes.header,
-            },
-          ]}
-        >
-          Ofertas
-        </Text>
-
-        <Ionicons name="cart" size={24} color="#F39C12" />
-      </View>
-
-      <Text
-        style={[
-          styles.header,
-          {
-            color: colors.text,
-            fontSize: fontSizes.title,
-          },
-        ]}
-      >
-        Comparador de precios
-      </Text>
-
-      <Text
-        style={[
-          styles.subtitle,
-          {
-            color: colors.secondaryText,
-            fontSize: fontSizes.subtitle,
-          },
-        ]}
-      >
-        Busca un medicamento o elige uno de tus medicamentos.
-      </Text>
-
-      <View
-        style={[
-          styles.searchContainer,
-          {
-            backgroundColor: colors.card,
-            borderColor: colors.border,
-          },
-        ]}
-      >
-        <Ionicons
-          name="search"
-          size={20}
-          color={colors.secondaryText}
-          style={styles.searchIcon}
-        />
-
-        <TextInput
-          style={[
-            styles.searchInput,
-            {
-              color: colors.text,
-              fontSize: fontSizes.normal,
-            },
-          ]}
-          placeholder="Ej: Paracetamol"
-          placeholderTextColor={colors.secondaryText}
-          value={search}
-          onChangeText={setSearch}
-          returnKeyType="search"
-          onSubmitEditing={handleSearch}
-        />
-      </View>
-
-      <TouchableOpacity
-        style={[styles.searchButton, { backgroundColor: colors.primary }]}
-        onPress={handleSearch}
-        disabled={loading}
-      >
-        <Text style={[styles.searchButtonText, { fontSize: fontSizes.button }]}>
-          {loading ? 'Buscando...' : 'Buscar ofertas'}
-        </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={[styles.myMedicinesButton, { backgroundColor: '#2D9CDB' }]}
-        onPress={onGoMyMedicines}
-        activeOpacity={0.85}
-      >
-        <View style={styles.myMedicinesButtonContent}>
-          <MaterialCommunityIcons
-            name="pill-multiple"
-            size={38}
-            color="#FFFFFF"
-            style={styles.myMedicinesIcon}
-          />
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      edges={['top', 'left', 'right']}
+    >
+      <View style={styles.content}>
+        <View style={styles.topBar}>
+          <TouchableOpacity onPress={onBack}>
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          </TouchableOpacity>
 
           <Text
             style={[
-              styles.myMedicinesText,
-              {
-                fontSize: fontSizes.normal + 6,
-              },
-            ]}
-          >
-            Mis medicamentos
-          </Text>
-
-          <Ionicons name="chevron-forward" size={28} color="#FFFFFF" />
-        </View>
-      </TouchableOpacity>
-
-      {loading ? (
-        <View style={styles.centerContent}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text
-            style={[
-              styles.loadingText,
-              {
-                color: colors.secondaryText,
-                fontSize: fontSizes.normal,
-              },
-            ]}
-          >
-            Buscando ofertas...
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          data={offers}
-          keyExtractor={(item, index) =>
-            `${item.pharmacy}-${item.medicineName}-${item.price}-${index}`
-          }
-          renderItem={renderItem}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
-            searched ? (
-              <View style={styles.centerContent}>
-                <Ionicons
-                  name="medkit-outline"
-                  size={48}
-                  color={colors.secondaryText}
-                />
-
-                <Text
-                  style={[
-                    styles.emptyText,
-                    {
-                      color: colors.secondaryText,
-                      fontSize: fontSizes.normal,
-                    },
-                  ]}
-                >
-                  No se encontraron ofertas disponibles para ese medicamento.
-                </Text>
-              </View>
-            ) : null
-          }
-        />
-      )}
-
-      <View style={[styles.bottomNav, { backgroundColor: colors.card }]}>
-        <TouchableOpacity style={styles.navItem} onPress={onGoInventory}>
-          <Ionicons name="home-outline" size={24} color={colors.text} />
-          <Text
-            style={[
-              styles.navText,
+              styles.logoText,
               {
                 color: colors.text,
-                fontSize: fontSizes.small,
-              },
-            ]}
-          >
-            Inicio
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem} onPress={onGoAlerts}>
-          <Ionicons name="alert-circle-outline" size={24} color="#E74C3C" />
-          <Text
-            style={[
-              styles.navText,
-              {
-                color: '#E74C3C',
-                fontSize: fontSizes.small,
-              },
-            ]}
-          >
-            Alertas
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="cart" size={24} color="#F39C12" />
-          <Text
-            style={[
-              styles.navText,
-              {
-                color: '#F39C12',
-                fontSize: fontSizes.small,
+                fontSize: fontSizes.header,
               },
             ]}
           >
             Ofertas
           </Text>
-        </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} onPress={onGoProfile}>
-          <Ionicons name="person-outline" size={24} color={colors.text} />
-          <Text
+          <Ionicons name="cart" size={24} color="#F39C12" />
+        </View>
+
+        <Text
+          style={[
+            styles.header,
+            {
+              color: colors.text,
+              fontSize: fontSizes.title,
+            },
+          ]}
+        >
+          Comparador de precios
+        </Text>
+
+        <Text
+          style={[
+            styles.subtitle,
+            {
+              color: colors.secondaryText,
+              fontSize: fontSizes.subtitle,
+            },
+          ]}
+        >
+          Busca un medicamento o elige uno de tus medicamentos.
+        </Text>
+
+        <View
+          style={[
+            styles.searchContainer,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <Ionicons
+            name="search"
+            size={20}
+            color={colors.secondaryText}
+            style={styles.searchIcon}
+          />
+
+          <TextInput
             style={[
-              styles.navText,
+              styles.searchInput,
               {
                 color: colors.text,
-                fontSize: fontSizes.small,
+                fontSize: fontSizes.normal,
               },
             ]}
-          >
-            Perfil
+            placeholder="Ej: Paracetamol"
+            placeholderTextColor={colors.secondaryText}
+            value={search}
+            onChangeText={setSearch}
+            returnKeyType="search"
+            onSubmitEditing={handleSearch}
+          />
+        </View>
+
+        <TouchableOpacity
+          style={[styles.searchButton, { backgroundColor: colors.primary }]}
+          onPress={handleSearch}
+          disabled={loading}
+        >
+          <Text style={[styles.searchButtonText, { fontSize: fontSizes.button }]}>
+            {loading ? 'Buscando...' : 'Buscar ofertas'}
           </Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.myMedicinesButton, { backgroundColor: '#2D9CDB' }]}
+          onPress={onGoMyMedicines}
+          activeOpacity={0.85}
+        >
+          <View style={styles.myMedicinesButtonContent}>
+            <MaterialCommunityIcons
+              name="pill-multiple"
+              size={38}
+              color="#FFFFFF"
+              style={styles.myMedicinesIcon}
+            />
+
+            <Text
+              style={[
+                styles.myMedicinesText,
+                {
+                  fontSize: fontSizes.normal + 6,
+                },
+              ]}
+            >
+              Mis medicamentos
+            </Text>
+
+            <Ionicons name="chevron-forward" size={28} color="#FFFFFF" />
+          </View>
+        </TouchableOpacity>
+
+        {loading ? (
+          <View style={styles.centerContent}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text
+              style={[
+                styles.loadingText,
+                {
+                  color: colors.secondaryText,
+                  fontSize: fontSizes.normal,
+                },
+              ]}
+            >
+              Buscando ofertas...
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={offers}
+            keyExtractor={(item, index) =>
+              `${item.pharmacy}-${item.medicineName}-${item.price}-${index}`
+            }
+            renderItem={renderItem}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={[
+              styles.listContent,
+              { paddingBottom: 100 + insets.bottom },
+            ]}
+            ListEmptyComponent={
+              searched ? (
+                <View style={styles.centerContent}>
+                  <Ionicons
+                    name="medkit-outline"
+                    size={48}
+                    color={colors.secondaryText}
+                  />
+
+                  <Text
+                    style={[
+                      styles.emptyText,
+                      {
+                        color: colors.secondaryText,
+                        fontSize: fontSizes.normal,
+                      },
+                    ]}
+                  >
+                    No se encontraron ofertas disponibles para ese medicamento.
+                  </Text>
+                </View>
+              ) : null
+            }
+          />
+        )}
+
+        <View
+          style={[
+            styles.bottomNav,
+            {
+              backgroundColor: colors.card,
+              height: 75 + insets.bottom,
+              paddingBottom: insets.bottom,
+            },
+          ]}
+        >
+          <TouchableOpacity style={styles.navItem} onPress={onGoInventory}>
+            <Ionicons name="home-outline" size={24} color={colors.text} />
+            <Text
+              style={[
+                styles.navText,
+                {
+                  color: colors.text,
+                  fontSize: fontSizes.small,
+                },
+              ]}
+            >
+              Inicio
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.navItem} onPress={onGoAlerts}>
+            <Ionicons name="alert-circle-outline" size={24} color="#E74C3C" />
+            <Text
+              style={[
+                styles.navText,
+                {
+                  color: '#E74C3C',
+                  fontSize: fontSizes.small,
+                },
+              ]}
+            >
+              Alertas
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.navItem}>
+            <Ionicons name="cart" size={24} color="#F39C12" />
+            <Text
+              style={[
+                styles.navText,
+                {
+                  color: '#F39C12',
+                  fontSize: fontSizes.small,
+                },
+              ]}
+            >
+              Ofertas
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.navItem} onPress={onGoProfile}>
+            <Ionicons name="person-outline" size={24} color={colors.text} />
+            <Text
+              style={[
+                styles.navText,
+                {
+                  color: colors.text,
+                  fontSize: fontSizes.small,
+                },
+              ]}
+            >
+              Perfil
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -454,8 +474,11 @@ export default OffersScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+
+  content: {
+    flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 55,
   },
 
   topBar: {
@@ -630,7 +653,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: 75,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     flexDirection: 'row',
