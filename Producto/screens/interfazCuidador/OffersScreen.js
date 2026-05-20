@@ -8,6 +8,7 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
+  Linking,
 } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
@@ -28,7 +29,7 @@ const OffersScreen = ({
   onGoMyMedicines,
 }) => {
   const { colors, fontSizes } = getTheme(settings);
-  const { medicines } = useInventory(patientId);
+  useInventory(patientId);
 
   const [search, setSearch] = useState('');
   const [offers, setOffers] = useState([]);
@@ -39,10 +40,7 @@ const OffersScreen = ({
     const query = medicineName.trim();
 
     if (query.length < 2) {
-      Alert.alert(
-        'Búsqueda inválida',
-        'Ingresa al menos 2 caracteres.'
-      );
+      Alert.alert('Búsqueda inválida', 'Ingresa al menos 2 caracteres.');
       return;
     }
 
@@ -60,15 +58,17 @@ const OffersScreen = ({
         throw new Error('Respuesta inválida de la API');
       }
 
-      setOffers(data.results);
+      const availableOffers = data.results
+        .filter((item) => item.available !== false)
+        .sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
+
+      setOffers(availableOffers);
     } catch (error) {
       console.log('Error consultando API:', error);
-
       Alert.alert(
         'Error',
         'No se pudieron cargar los precios. Verifica que la API esté activa.'
       );
-
       setOffers([]);
     } finally {
       setLoading(false);
@@ -77,10 +77,7 @@ const OffersScreen = ({
 
   const handleSearch = async () => {
     if (!search.trim()) {
-      Alert.alert(
-        'Campo vacío',
-        'Ingresa el nombre de un medicamento.'
-      );
+      Alert.alert('Campo vacío', 'Ingresa el nombre de un medicamento.');
       return;
     }
 
@@ -92,11 +89,34 @@ const OffersScreen = ({
     return value.toLocaleString('es-CL');
   };
 
+  const openPharmacyUrl = async (url) => {
+    if (!url) {
+      Alert.alert('Enlace no disponible', 'No se encontró el enlace de compra.');
+      return;
+    }
+
+    try {
+      const canOpen = await Linking.canOpenURL(url);
+
+      if (!canOpen) {
+        Alert.alert('Error', 'No se pudo abrir el sitio web.');
+        return;
+      }
+
+      await Linking.openURL(url);
+    } catch (error) {
+      console.log('Error abriendo enlace:', error);
+      Alert.alert('Error', 'No se pudo abrir el sitio web.');
+    }
+  };
+
   const renderItem = ({ item, index }) => {
     const isBest = index === 0;
 
     return (
-      <View
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={() => openPharmacyUrl(item.productUrl || item.url)}
         style={[
           styles.card,
           {
@@ -109,9 +129,7 @@ const OffersScreen = ({
         {isBest && (
           <View style={styles.bestBadge}>
             <Ionicons name="star" size={14} color="#FFFFFF" />
-            <Text style={styles.bestBadgeText}>
-              Mejor precio
-            </Text>
+            <Text style={styles.bestBadgeText}>Mejor precio</Text>
           </View>
         )}
 
@@ -154,16 +172,12 @@ const OffersScreen = ({
               style={[
                 styles.availableText,
                 {
-                  color: item.available
-                    ? colors.primary
-                    : '#E74C3C',
+                  color: colors.primary,
                   fontSize: fontSizes.small,
                 },
               ]}
             >
-              {item.available
-                ? 'Disponible'
-                : 'Sin stock'}
+              Disponible
             </Text>
           </View>
 
@@ -172,9 +186,7 @@ const OffersScreen = ({
               style={[
                 styles.price,
                 {
-                  color: isBest
-                    ? colors.primary
-                    : colors.text,
+                  color: isBest ? colors.primary : colors.text,
                   fontSize: fontSizes.normal + 4,
                 },
               ]}
@@ -182,33 +194,34 @@ const OffersScreen = ({
               ${formatPrice(item.price)}
             </Text>
 
-            {isBest && (
-              <Ionicons
-                name="star"
-                size={16}
-                color="#F1C40F"
-              />
+            {isBest ? (
+              <Ionicons name="star" size={16} color="#F1C40F" />
+            ) : (
+              <Ionicons name="open-outline" size={17} color={colors.text} />
             )}
           </View>
         </View>
-      </View>
+
+        <Text
+          style={[
+            styles.openHint,
+            {
+              color: colors.secondaryText,
+              fontSize: fontSizes.small,
+            },
+          ]}
+        >
+          Toca para ir al sitio de compra
+        </Text>
+      </TouchableOpacity>
     );
   };
 
   return (
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: colors.background },
-      ]}
-    >
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.topBar}>
         <TouchableOpacity onPress={onBack}>
-          <Ionicons
-            name="arrow-back"
-            size={24}
-            color={colors.text}
-          />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
 
         <Text
@@ -223,11 +236,7 @@ const OffersScreen = ({
           Ofertas
         </Text>
 
-        <Ionicons
-          name="cart"
-          size={24}
-          color="#F39C12"
-        />
+        <Ionicons name="cart" size={24} color="#F39C12" />
       </View>
 
       <Text
@@ -282,33 +291,23 @@ const OffersScreen = ({
           placeholderTextColor={colors.secondaryText}
           value={search}
           onChangeText={setSearch}
+          returnKeyType="search"
+          onSubmitEditing={handleSearch}
         />
       </View>
 
       <TouchableOpacity
-        style={[
-          styles.searchButton,
-          { backgroundColor: colors.primary },
-        ]}
+        style={[styles.searchButton, { backgroundColor: colors.primary }]}
         onPress={handleSearch}
+        disabled={loading}
       >
-        <Text
-          style={[
-            styles.searchButtonText,
-            {
-              fontSize: fontSizes.button,
-            },
-          ]}
-        >
-          Buscar ofertas
+        <Text style={[styles.searchButtonText, { fontSize: fontSizes.button }]}>
+          {loading ? 'Buscando...' : 'Buscar ofertas'}
         </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[
-          styles.myMedicinesButton,
-          { backgroundColor: '#2D9CDB' },
-        ]}
+        style={[styles.myMedicinesButton, { backgroundColor: '#2D9CDB' }]}
         onPress={onGoMyMedicines}
         activeOpacity={0.85}
       >
@@ -331,21 +330,13 @@ const OffersScreen = ({
             Mis medicamentos
           </Text>
 
-          <Ionicons
-            name="chevron-forward"
-            size={28}
-            color="#FFFFFF"
-          />
+          <Ionicons name="chevron-forward" size={28} color="#FFFFFF" />
         </View>
       </TouchableOpacity>
 
       {loading ? (
         <View style={styles.centerContent}>
-          <ActivityIndicator
-            size="large"
-            color={colors.primary}
-          />
-
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text
             style={[
               styles.loadingText,
@@ -362,7 +353,7 @@ const OffersScreen = ({
         <FlatList
           data={offers}
           keyExtractor={(item, index) =>
-            String(index)
+            `${item.pharmacy}-${item.medicineName}-${item.price}-${index}`
           }
           renderItem={renderItem}
           showsVerticalScrollIndicator={false}
@@ -385,7 +376,7 @@ const OffersScreen = ({
                     },
                   ]}
                 >
-                  No se encontraron ofertas para ese medicamento.
+                  No se encontraron ofertas disponibles para ese medicamento.
                 </Text>
               </View>
             ) : null
@@ -393,22 +384,9 @@ const OffersScreen = ({
         />
       )}
 
-      <View
-        style={[
-          styles.bottomNav,
-          { backgroundColor: colors.card },
-        ]}
-      >
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={onGoInventory}
-        >
-          <Ionicons
-            name="home-outline"
-            size={24}
-            color={colors.text}
-          />
-
+      <View style={[styles.bottomNav, { backgroundColor: colors.card }]}>
+        <TouchableOpacity style={styles.navItem} onPress={onGoInventory}>
+          <Ionicons name="home-outline" size={24} color={colors.text} />
           <Text
             style={[
               styles.navText,
@@ -422,16 +400,8 @@ const OffersScreen = ({
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={onGoAlerts}
-        >
-          <Ionicons
-            name="alert-circle-outline"
-            size={24}
-            color="#E74C3C"
-          />
-
+        <TouchableOpacity style={styles.navItem} onPress={onGoAlerts}>
+          <Ionicons name="alert-circle-outline" size={24} color="#E74C3C" />
           <Text
             style={[
               styles.navText,
@@ -446,12 +416,7 @@ const OffersScreen = ({
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.navItem}>
-          <Ionicons
-            name="cart"
-            size={24}
-            color="#F39C12"
-          />
-
+          <Ionicons name="cart" size={24} color="#F39C12" />
           <Text
             style={[
               styles.navText,
@@ -465,16 +430,8 @@ const OffersScreen = ({
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={onGoProfile}
-        >
-          <Ionicons
-            name="person-outline"
-            size={24}
-            color={colors.text}
-          />
-
+        <TouchableOpacity style={styles.navItem} onPress={onGoProfile}>
+          <Ionicons name="person-outline" size={24} color={colors.text} />
           <Text
             style={[
               styles.navText,
@@ -646,6 +603,11 @@ const styles = StyleSheet.create({
   price: {
     fontWeight: '900',
     marginRight: 5,
+  },
+
+  openHint: {
+    marginTop: 8,
+    fontWeight: '700',
   },
 
   centerContent: {

@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const cheerio = require('cheerio');
+const puppeteer = require('puppeteer');
 
 const app = express();
 const PORT = 3001;
@@ -11,99 +12,144 @@ app.use(express.json());
 
 const cleanText = (value = '') => value.replace(/\s+/g, ' ').trim();
 
-const extractPrice = (text = '') => {
-  const match = text.match(/\$\s?[\d\.]{3,}/);
-  if (!match) return null;
-
-  const price = Number(match[0].replace('$', '').replace(/\./g, '').trim());
-
-  if (!price || price < 500) return null;
-
-  return price;
-};
-
 const normalizeQuery = (query = '') => query.trim().toLowerCase();
 
-const scrapeCruzVerde = async (query) => {
-  const url = `https://www.cruzverde.cl/search?query=${encodeURIComponent(query)}`;
+const hasUnitPriceText = (text = '') => {
+  const lowerText = text.toLowerCase();
 
-  try {
-    const { data } = await axios.get(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0',
-      },
-      timeout: 12000,
-    });
-
-    const $ = cheerio.load(data);
-    const results = [];
-
-    $('body')
-      .text()
-      .split('\n')
-      .map(cleanText)
-      .filter(Boolean)
-      .forEach((line) => {
-        if (
-          line.toLowerCase().includes(normalizeQuery(query)) &&
-          line.includes('$')
-        ) {
-          const price = extractPrice(line);
-
-          if (price) {
-            results.push({
-              pharmacy: 'Cruz Verde',
-              medicineName: line.slice(0, 120),
-              price,
-              url,
-              available: true,
-              updatedAt: new Date().toISOString(),
-            });
-          }
-        }
-      });
-
-    return results.slice(0, 5);
-  } catch (error) {
-    console.error('Error Cruz Verde:', error.message);
-    return [];
-  }
+  return (
+    lowerText.includes('por comp') ||
+    lowerText.includes('por comprimido') ||
+    lowerText.includes('por cápsula') ||
+    lowerText.includes('por capsula') ||
+    lowerText.includes('precio por unidad') ||
+    lowerText.includes('precio unitario') ||
+    lowerText.includes('unidad referencial')
+  );
 };
 
+const extractPrice = (text = '') => {
+  if (hasUnitPriceText(text)) return null;
+
+  const matches = text.match(/\$\s?[\d\.]+/g);
+
+  if (!matches || matches.length === 0) return null;
+
+  const prices = matches
+    .map((match) => {
+      const raw = match.replace('$', '').trim();
+
+      // Evita decimales raros como $9.33
+      const parts = raw.split('.');
+      if (parts.length > 1 && parts.some((part, index) => index > 0 && part.length !== 3)) {
+        return null;
+      }
+
+      const price = Number(raw.replace(/\./g, ''));
+
+      if (!price || price < 800) return null;
+
+      return price;
+    })
+    .filter(Boolean);
+
+  if (prices.length === 0) return null;
+
+  return Math.min(...prices);
+};
+
+const absoluteUrl = (base, href) => {
+  if (!href) return base;
+  if (href.startsWith('http')) return href;
+  if (href.startsWith('/')) return `${base}${href}`;
+  return `${base}/${href}`;
+};
+
+const isValidProductName = (value = '') => {
+  const text = value.toLowerCase();
+
+  return (
+    value.length >= 3 &&
+    value.length <= 140 &&
+    !text.includes('vtex') &&
+    !text.includes('account') &&
+    !text.includes('assets') &&
+    !text.includes('filter') &&
+    !text.includes('search') &&
+    !text.includes('runtime') &&
+    !value.includes('{') &&
+    !value.includes('}')
+  );
+};
+
+const findProductUrlFromAnchors = ($, query, baseUrl) => {
+  const normalizedQuery = normalizeQuery(query);
+  let productUrl = '';
+
+  $('a[href]').each((_, element) => {
+    if (productUrl) return;
+
+    const text = cleanText($(element).text());
+    const href = $(element).attr('href');
+
+    const textMatches = text.toLowerCase().includes(normalizedQuery);
+    const hrefMatches = href?.toLowerCase().includes(normalizedQuery);
+
+    if ((textMatches || hrefMatches) && href && !href.includes('#')) {
+      productUrl = absoluteUrl(baseUrl, href);
+    }
+  });
+
+  return productUrl;
+};
+
+const shouldSkipWindow = (text = '') => hasUnitPriceText(text);
+
+// =========================================
+// AHUMADA (CHEERIO)
+// =========================================
+
 const scrapeAhumada = async (query) => {
-  const url = `https://www.farmaciasahumada.cl/search?q=${encodeURIComponent(query)}`;
+  const searchUrl = `https://www.farmaciasahumada.cl/search?q=${encodeURIComponent(query)}`;
 
   try {
-    const { data } = await axios.get(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0',
-      },
-      timeout: 12000,
+    const { data } = await axios.get(searchUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+      timeout: 15000,
     });
 
     const $ = cheerio.load(data);
-    const text = $('body').text();
-
-    const lines = text.split('\n').map(cleanText).filter(Boolean);
+    const lines = $('body').text().split('\n').map(cleanText).filter(Boolean);
     const results = [];
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
 
-      if (line.toLowerCase().includes(normalizeQuery(query))) {
-        const windowText = lines.slice(Math.max(0, i - 5), i + 8).join(' ');
-        const price = extractPrice(windowText);
+      if (!line.toLowerCase().includes(normalizeQuery(query))) continue;
+      if (!isValidProductName(line)) continue;
 
-        if (price) {
-          results.push({
-            pharmacy: 'Farmacias Ahumada',
-            medicineName: line.slice(0, 120),
-            price,
-            url,
-            available: !windowText.toLowerCase().includes('sin stock'),
-            updatedAt: new Date().toISOString(),
-          });
-        }
+      const windowText = lines.slice(Math.max(0, i - 5), i + 8).join(' ');
+
+      if (shouldSkipWindow(windowText)) continue;
+
+      const price = extractPrice(windowText);
+
+      if (price) {
+        const productUrl = findProductUrlFromAnchors(
+          $,
+          line,
+          'https://www.farmaciasahumada.cl'
+        );
+
+        results.push({
+          pharmacy: 'Farmacias Ahumada',
+          medicineName: line.slice(0, 120),
+          price,
+          url: productUrl || searchUrl,
+          productUrl: productUrl || searchUrl,
+          available: !windowText.toLowerCase().includes('sin stock'),
+          updatedAt: new Date().toISOString(),
+        });
       }
     }
 
@@ -114,49 +160,187 @@ const scrapeAhumada = async (query) => {
   }
 };
 
-const scrapeSalcobrand = async (query) => {
-    const url = `https://salcobrand.cl/search_result?query=${encodeURIComponent(query)}`;
+// =========================================
+// DR SIMI (CHEERIO)
+// =========================================
+
+const scrapeDrSimi = async (query) => {
+  const searchUrl = `https://www.drsimi.cl/${encodeURIComponent(query)}?_q=${encodeURIComponent(query)}&map=ft`;
+
+  const extractDrSimiName = (line) => {
+    const patterns = [
+      /"productName":"([^"]+)"/,
+      /\\"productName\\":\\"([^\\"]+)\\"/,
+      /"name":"([^"]+)"/,
+      /\\"name\\":\\"([^\\"]+)\\"/,
+    ];
+
+    for (const pattern of patterns) {
+      const match = line.match(pattern);
+      if (match?.[1] && isValidProductName(match[1])) return match[1];
+    }
+
+    if (isValidProductName(line)) return line;
+
+    return null;
+  };
 
   try {
-    const { data } = await axios.get(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0',
-      },
-      timeout: 12000,
+    const { data } = await axios.get(searchUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+      timeout: 15000,
     });
 
     const $ = cheerio.load(data);
-    const text = $('body').text();
-
-    const lines = text.split('\n').map(cleanText).filter(Boolean);
+    const lines = $('body').text().split('\n').map(cleanText).filter(Boolean);
     const results = [];
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
 
-      if (line.toLowerCase().includes(normalizeQuery(query))) {
-        const windowText = lines.slice(Math.max(0, i - 5), i + 8).join(' ');
-        const price = extractPrice(windowText);
+      if (!line.toLowerCase().includes(normalizeQuery(query))) continue;
 
-        if (price) {
-          results.push({
-            pharmacy: 'Salcobrand',
-            medicineName: line.slice(0, 120),
-            price,
-            url,
-            available: !windowText.toLowerCase().includes('sin stock'),
-            updatedAt: new Date().toISOString(),
-          });
-        }
+      const medicineName = extractDrSimiName(line);
+
+      if (!medicineName) continue;
+
+      const windowText = lines.slice(Math.max(0, i - 5), i + 10).join(' ');
+
+      if (shouldSkipWindow(windowText)) continue;
+
+      const price = extractPrice(windowText);
+
+      if (price) {
+        const productUrl = findProductUrlFromAnchors(
+          $,
+          medicineName,
+          'https://www.drsimi.cl'
+        );
+
+        results.push({
+          pharmacy: 'Dr. Simi',
+          medicineName,
+          price,
+          url: productUrl || searchUrl,
+          productUrl: productUrl || searchUrl,
+          available: !windowText.toLowerCase().includes('sin stock'),
+          updatedAt: new Date().toISOString(),
+        });
       }
     }
 
     return results.slice(0, 5);
   } catch (error) {
-    console.error('Error Salcobrand:', error.message);
+    console.error('Error Dr. Simi:', error.message);
     return [];
   }
 };
+
+// =========================================
+// SALCOBRAND (PUPPETEER)
+// =========================================
+
+const scrapeSalcobrand = async (query) => {
+  const searchUrl = `https://salcobrand.cl/search_result?query=${encodeURIComponent(query)}`;
+  let browser;
+
+  try {
+    browser = await puppeteer.launch({
+      headless: true,
+    });
+
+    const page = await browser.newPage();
+
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
+
+    await page.goto(searchUrl, {
+      waitUntil: 'networkidle2',
+      timeout: 30000,
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 4000));
+
+    const pageData = await page.evaluate(() => {
+      const textLines = document.body.innerText
+        .split('\n')
+        .map((line) => line.replace(/\s+/g, ' ').trim())
+        .filter(Boolean);
+
+      const links = Array.from(document.querySelectorAll('a[href]')).map((a) => ({
+        text: a.innerText.replace(/\s+/g, ' ').trim(),
+        href: a.href,
+      }));
+
+      return { textLines, links };
+    });
+
+    const results = [];
+    const normalizedQuery = normalizeQuery(query);
+
+    for (let i = 0; i < pageData.textLines.length; i++) {
+      const line = pageData.textLines[i];
+
+      if (!line.toLowerCase().includes(normalizedQuery)) continue;
+      if (!isValidProductName(line)) continue;
+
+      const windowText = pageData.textLines
+        .slice(Math.max(0, i - 5), i + 10)
+        .join(' ');
+
+      if (shouldSkipWindow(windowText)) continue;
+
+      const price = extractPrice(windowText);
+
+      if (price) {
+            const productLink = pageData.links.find((link) => {
+            const text = link.text.toLowerCase();
+            const href = link.href.toLowerCase();
+
+            const looksLikeProduct =
+                href.includes('/products/') ||
+                href.includes('/product/') ||
+                href.includes('/p/');
+
+            const matchesProduct =
+                text.includes(normalizedQuery) ||
+                href.includes(normalizedQuery) ||
+                line
+                .toLowerCase()
+                .split(' ')
+                .filter((word) => word.length >= 4)
+                .some((word) => href.includes(word));
+
+            return looksLikeProduct && matchesProduct;
+            });
+
+        results.push({
+          pharmacy: 'Salcobrand',
+          medicineName: line.slice(0, 120),
+          price,
+          url: productLink?.href || searchUrl,
+          productUrl: productLink?.href || searchUrl,
+          hasDirectProductUrl: Boolean(productLink?.href),
+          available: !windowText.toLowerCase().includes('sin stock'),
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    }
+
+    await browser.close();
+
+    return results.slice(0, 5);
+  } catch (error) {
+    console.error('Error Salcobrand:', error.message);
+
+    if (browser) await browser.close();
+
+    return [];
+  }
+};
+
+// =========================================
+// API
+// =========================================
 
 app.get('/api/prices', async (req, res) => {
   const query = req.query.query;
@@ -170,16 +354,18 @@ app.get('/api/prices', async (req, res) => {
 
   const cleanQuery = query.trim();
 
-  const [cruzVerde, ahumada, salcobrand] = await Promise.all([
-    scrapeCruzVerde(cleanQuery),
+  console.log('Buscando:', cleanQuery);
+
+  const [ahumada, drSimi, salcobrand] = await Promise.all([
     scrapeAhumada(cleanQuery),
+    scrapeDrSimi(cleanQuery),
     scrapeSalcobrand(cleanQuery),
   ]);
 
   const uniqueResults = new Map();
 
-  [...cruzVerde, ...ahumada, ...salcobrand].forEach((item) => {
-    if (!item.price) return;
+  [...ahumada, ...drSimi, ...salcobrand].forEach((item) => {
+    if (!item.price || item.available === false) return;
 
     const key = `${item.pharmacy}_${item.medicineName}_${item.price}`;
 
@@ -197,6 +383,11 @@ app.get('/api/prices', async (req, res) => {
     query: cleanQuery,
     count: results.length,
     results,
+    sources: {
+      ahumada: ahumada.length,
+      drSimi: drSimi.length,
+      salcobrand: salcobrand.length,
+    },
   });
 });
 
