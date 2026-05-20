@@ -110,7 +110,7 @@ const AddMedicineScreen = ({ settings, onCancel, onSaved, patientId }) => {
       'Guía de categorías',
       'Tableta / Cápsula:\nPastillas, comprimidos o cápsulas. Puedes usar 0.5 si el paciente toma media pastilla.\n\n' +
         'Jarabe / Gotas:\nMedicamentos líquidos. Se miden en mL. Ejemplo: 5 mL por toma.\n\n' +
-        'Inyección:\nAmpollas, jeringas o dosis inyectables. Se maneja como dosis. Ejemplo: 1 dosis.\n\n' +
+        'Inyección:\nLa medición para inyecciones se registra solo como dosis inyectables.\n\n' +
         'Insumo médico:\nPañales, guantes, gasas, tiras, mascarillas u otros elementos. Se manejan por unidades.'
     );
   };
