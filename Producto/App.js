@@ -27,6 +27,7 @@ import PatientQRScreen from './screens/interfazAdultoMayor/PatientQRScreen';
 import PatientWaitingLinkScreen from './screens/interfazAdultoMayor/PatientWaitingLinkScreen';
 
 import HomeScreen from './screens/interfazAdultoMayor/HomeScreen';
+import MyMedicinesOffersScreen from './screens/interfazCuidador/MyMedicinesOffersScreen';
 import EmergencyScreen from './screens/interfazAdultoMayor/EmergencyScreen';
 import TakeMedicineScreen from './screens/interfazAdultoMayor/TakeMedicineScreen';
 
@@ -654,14 +655,28 @@ const handleLogout = async () => {
   }
 
   // Ofertas
+  // Pantalla principal del comparador de ofertas
   if (screen === 'offers') {
     return (
       <OffersScreen
-      settings={settings}
-      onBack={() => setScreen('inventory')}
-      onGoInventory={() => setScreen('inventory')}
-      onGoAlerts={() => setScreen('alerts')}
-      onGoProfile={() => setScreen('profile')}
+        patientId={patientId}
+        settings={settings}
+        onBack={() => setScreen('inventory')}
+        onGoInventory={() => setScreen('inventory')}
+        onGoAlerts={() => setScreen('alerts')}
+        onGoProfile={() => setScreen('profile')}
+        onGoMyMedicines={() => setScreen('myMedicinesOffers')}
+      />
+    );
+  }
+
+  // Pantalla que muestra los medicamentos del paciente con comparador de ofertas
+  if (screen === 'myMedicinesOffers') {
+    return (
+      <MyMedicinesOffersScreen
+        patientId={patientId}
+        settings={settings}
+        onBack={() => setScreen('offers')}
       />
     );
   }

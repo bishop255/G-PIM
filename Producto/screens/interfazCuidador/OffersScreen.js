@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -8,39 +8,46 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { getTheme } from '../../theme/theme';
+import { useInventory } from '../../hook/useInventory';
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbxVlvaQ1NE76H2ryldf3rTl67__-e7cuF5UGAWmoLo0NfOQOpxPhusjlzliF-wRPJfjBA/exec';
 
-const OffersScreen = ({ settings, onBack, onGoInventory, onGoAlerts, onGoProfile }) => {
+// Pantalla principal del comparador de ofertas
+const OffersScreen = ({
+  patientId,
+  settings,
+  onBack,
+  onGoInventory,
+  onGoAlerts,
+  onGoProfile,
+  onGoMyMedicines,
+}) => {
   const { colors, fontSizes } = getTheme(settings);
+  const { medicines } = useInventory(patientId);
 
   const [search, setSearch] = useState('');
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
 
-  const handleSearch = async () => {
-    if (!search.trim()) {
-      Alert.alert('Campo vacío', 'Ingresa el nombre de un medicamento.');
-      return;
-    }
-
+  const fetchOffers = async (medicineName) => {
     try {
       setLoading(true);
       setSearched(true);
 
       const response = await fetch(
-        `${API_URL}?nombre_medicamento=${encodeURIComponent(search.trim())}&top=3`
+        `${API_URL}?nombre_medicamento=${encodeURIComponent(medicineName)}&top=3`
       );
 
       const data = await response.json();
 
       if (!Array.isArray(data)) {
-        throw new Error('La respuesta de la API no es válida');
+        throw new Error('Respuesta inválida de la API');
       }
 
       setOffers(data);
@@ -52,6 +59,16 @@ const OffersScreen = ({ settings, onBack, onGoInventory, onGoAlerts, onGoProfile
       setLoading(false);
     }
   };
+
+  const handleSearch = async () => {
+    if (!search.trim()) {
+      Alert.alert('Campo vacío', 'Ingresa el nombre de un medicamento.');
+      return;
+    }
+
+    await fetchOffers(search.trim());
+  };
+
 
   const renderItem = ({ item, index }) => {
     const isBest = index === 0;
@@ -102,20 +119,9 @@ const OffersScreen = ({ settings, onBack, onGoInventory, onGoAlerts, onGoProfile
               ${item.precio}
             </Text>
 
-            {isBest && (
-              <Ionicons name="star" size={16} color="#F1C40F" />
-            )}
+            {isBest && <Ionicons name="star" size={16} color="#F1C40F" />}
           </View>
         </View>
-
-        <Text
-          style={[
-            styles.addressText,
-            { color: colors.secondaryText, fontSize: fontSizes.small },
-          ]}
-        >
-          {item.direccion_farmacia || 'Dirección no disponible'}
-        </Text>
       </View>
     );
   };
@@ -154,7 +160,7 @@ const OffersScreen = ({ settings, onBack, onGoInventory, onGoAlerts, onGoProfile
           { color: colors.secondaryText, fontSize: fontSizes.subtitle },
         ]}
       >
-        Busca un medicamento y revisa las 3 farmacias más económicas.
+        Busca un medicamento o elige uno de tus medicamentos.
       </Text>
 
       <View
@@ -198,6 +204,38 @@ const OffersScreen = ({ settings, onBack, onGoInventory, onGoAlerts, onGoProfile
           Buscar ofertas
         </Text>
       </TouchableOpacity>
+
+      {/* Botón para abrir la pantalla de medicamentos del paciente */}
+    <TouchableOpacity
+      style={[styles.myMedicinesButton, { backgroundColor: '#2D9CDB' }]}
+      onPress={onGoMyMedicines}
+      activeOpacity={0.85}
+    >
+      <View style={styles.myMedicinesButtonContent}>
+        <MaterialCommunityIcons
+          name="pill-multiple"
+          size={38}
+          color="#FFFFFF"
+          style={styles.myMedicinesIcon}
+        />
+
+        <Text
+          style={[
+            styles.myMedicinesText,
+            { fontSize: fontSizes.normal + 6 },
+          ]}
+        >
+          Mis medicamentos
+        </Text>
+
+        <Ionicons
+          name="chevron-forward"
+          size={28}
+          color="#FFFFFF"
+        />
+      </View>
+    </TouchableOpacity>
+
 
       {loading ? (
         <View style={styles.centerContent}>
@@ -332,11 +370,55 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 14,
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   searchButtonText: {
     color: '#FFFFFF',
     fontWeight: '800',
+  },
+  myMedicinesButton: {
+    borderRadius: 26,
+    minHeight: 95,
+    justifyContent: 'center',
+    paddingHorizontal: 22,
+    marginBottom: 20,
+    alignSelf: 'center',
+    width: '100%',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  myMedicinesButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  myMedicinesIcon: {
+    marginRight: 14,
+  },
+  myMedicinesText: {
+    flex: 1,
+    color: '#FFFFFF',
+    fontWeight: '900',
+  },
+  medicineButtonsContainer: {
+    paddingBottom: 10,
+  },
+  medicineChip: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    marginRight: 10,
+    marginBottom: 10,
+  },
+  medicineChipText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  noMedicinesText: {
+    marginBottom: 10,
   },
   listContent: {
     paddingBottom: 100,
@@ -375,9 +457,6 @@ const styles = StyleSheet.create({
   price: {
     fontWeight: '700',
     marginRight: 5,
-  },
-  addressText: {
-    marginTop: 6,
   },
   centerContent: {
     alignItems: 'center',
