@@ -13,7 +13,7 @@ import { schedulePatientMedicineReminders, cancelPatientDoseReminders } from './
 import {
   scheduleSnoozeReminder, setupNotifications,
 } from './services/notificationService';
-
+import { checkAndNotifyStockAlerts } from './services/stockAlertService';
 
 // Importación de pantallas
 import SplashScreen from './screens/SplashScreen';
@@ -131,7 +131,7 @@ export default function App() {
 }, [patientId]);
 
 useEffect(() => {
-  // setupNotifications(); // ⚠️ Se activa cuando hay usuario autenticado
+  // setupNotifications(); //  Se activa cuando hay usuario autenticado
 
 
   const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -149,6 +149,8 @@ useEffect(() => {
             // Si ya tiene paciente -> inventario
             if (userData.hasPatient && userData.patientId) {
               setPatientId(userData.patientId);
+
+              await checkAndNotifyStockAlerts(userData.patientId);
               setScreen('inventory');
             }
 

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,16 +8,16 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
-  ScrollView,
 } from 'react-native';
+
 import { Ionicons } from '@expo/vector-icons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+
 import { getTheme } from '../../theme/theme';
 import { useInventory } from '../../hook/useInventory';
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbxVlvaQ1NE76H2ryldf3rTl67__-e7cuF5UGAWmoLo0NfOQOpxPhusjlzliF-wRPJfjBA/exec';
+const API_URL = 'http://192.168.1.100:3001/api/prices';
 
-// Pantalla principal del comparador de ofertas
 const OffersScreen = ({
   patientId,
   settings,
@@ -36,24 +36,39 @@ const OffersScreen = ({
   const [searched, setSearched] = useState(false);
 
   const fetchOffers = async (medicineName) => {
+    const query = medicineName.trim();
+
+    if (query.length < 2) {
+      Alert.alert(
+        'Búsqueda inválida',
+        'Ingresa al menos 2 caracteres.'
+      );
+      return;
+    }
+
     try {
       setLoading(true);
       setSearched(true);
 
       const response = await fetch(
-        `${API_URL}?nombre_medicamento=${encodeURIComponent(medicineName)}&top=3`
+        `${API_URL}?query=${encodeURIComponent(query)}`
       );
 
       const data = await response.json();
 
-      if (!Array.isArray(data)) {
+      if (!data?.ok || !Array.isArray(data.results)) {
         throw new Error('Respuesta inválida de la API');
       }
 
-      setOffers(data);
+      setOffers(data.results);
     } catch (error) {
       console.log('Error consultando API:', error);
-      Alert.alert('Error', 'No se pudieron cargar las ofertas.');
+
+      Alert.alert(
+        'Error',
+        'No se pudieron cargar los precios. Verifica que la API esté activa.'
+      );
+
       setOffers([]);
     } finally {
       setLoading(false);
@@ -62,13 +77,20 @@ const OffersScreen = ({
 
   const handleSearch = async () => {
     if (!search.trim()) {
-      Alert.alert('Campo vacío', 'Ingresa el nombre de un medicamento.');
+      Alert.alert(
+        'Campo vacío',
+        'Ingresa el nombre de un medicamento.'
+      );
       return;
     }
 
     await fetchOffers(search.trim());
   };
 
+  const formatPrice = (price) => {
+    const value = Number(price || 0);
+    return value.toLocaleString('es-CL');
+  };
 
   const renderItem = ({ item, index }) => {
     const isBest = index === 0;
@@ -79,47 +101,94 @@ const OffersScreen = ({
           styles.card,
           {
             backgroundColor: colors.card,
-            borderColor: colors.border,
+            borderColor: isBest ? colors.primary : colors.border,
           },
           isBest && styles.bestPriceRow,
         ]}
       >
+        {isBest && (
+          <View style={styles.bestBadge}>
+            <Ionicons name="star" size={14} color="#FFFFFF" />
+            <Text style={styles.bestBadgeText}>
+              Mejor precio
+            </Text>
+          </View>
+        )}
+
         <View style={styles.headerRow}>
-          <MaterialCommunityIcons name="pill" size={26} color={colors.primary} />
+          <MaterialCommunityIcons
+            name="pill"
+            size={26}
+            color={colors.primary}
+          />
+
           <Text
             style={[
               styles.medicineName,
-              { color: colors.text, fontSize: fontSizes.normal + 4 },
+              {
+                color: colors.text,
+                fontSize: fontSizes.normal + 4,
+              },
             ]}
+            numberOfLines={2}
           >
-            {item.nombre_medicamento}
+            {item.medicineName || 'Medicamento'}
           </Text>
         </View>
 
         <View style={styles.priceRow}>
-          <Text
-            style={[
-              styles.pharmacy,
-              { color: colors.text, fontSize: fontSizes.normal },
-            ]}
-          >
-            {item.nombre_farmacia}
-          </Text>
+          <View style={{ flex: 1 }}>
+            <Text
+              style={[
+                styles.pharmacy,
+                {
+                  color: colors.text,
+                  fontSize: fontSizes.normal,
+                },
+              ]}
+            >
+              {item.pharmacy || 'Farmacia'}
+            </Text>
+
+            <Text
+              style={[
+                styles.availableText,
+                {
+                  color: item.available
+                    ? colors.primary
+                    : '#E74C3C',
+                  fontSize: fontSizes.small,
+                },
+              ]}
+            >
+              {item.available
+                ? 'Disponible'
+                : 'Sin stock'}
+            </Text>
+          </View>
 
           <View style={styles.priceContainer}>
             <Text
               style={[
                 styles.price,
                 {
-                  color: isBest ? colors.primary : colors.text,
-                  fontSize: fontSizes.normal,
+                  color: isBest
+                    ? colors.primary
+                    : colors.text,
+                  fontSize: fontSizes.normal + 4,
                 },
               ]}
             >
-              ${item.precio}
+              ${formatPrice(item.price)}
             </Text>
 
-            {isBest && <Ionicons name="star" size={16} color="#F1C40F" />}
+            {isBest && (
+              <Ionicons
+                name="star"
+                size={16}
+                color="#F1C40F"
+              />
+            )}
           </View>
         </View>
       </View>
@@ -127,28 +196,47 @@ const OffersScreen = ({
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colors.background },
+      ]}
+    >
       <View style={styles.topBar}>
         <TouchableOpacity onPress={onBack}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
+          <Ionicons
+            name="arrow-back"
+            size={24}
+            color={colors.text}
+          />
         </TouchableOpacity>
 
         <Text
           style={[
             styles.logoText,
-            { color: colors.text, fontSize: fontSizes.header },
+            {
+              color: colors.text,
+              fontSize: fontSizes.header,
+            },
           ]}
         >
           Ofertas
         </Text>
 
-        <Ionicons name="cart" size={24} color="#F39C12" />
+        <Ionicons
+          name="cart"
+          size={24}
+          color="#F39C12"
+        />
       </View>
 
       <Text
         style={[
           styles.header,
-          { color: colors.text, fontSize: fontSizes.title },
+          {
+            color: colors.text,
+            fontSize: fontSizes.title,
+          },
         ]}
       >
         Comparador de precios
@@ -157,7 +245,10 @@ const OffersScreen = ({
       <Text
         style={[
           styles.subtitle,
-          { color: colors.secondaryText, fontSize: fontSizes.subtitle },
+          {
+            color: colors.secondaryText,
+            fontSize: fontSizes.subtitle,
+          },
         ]}
       >
         Busca un medicamento o elige uno de tus medicamentos.
@@ -182,7 +273,10 @@ const OffersScreen = ({
         <TextInput
           style={[
             styles.searchInput,
-            { color: colors.text, fontSize: fontSizes.normal },
+            {
+              color: colors.text,
+              fontSize: fontSizes.normal,
+            },
           ]}
           placeholder="Ej: Paracetamol"
           placeholderTextColor={colors.secondaryText}
@@ -192,58 +286,73 @@ const OffersScreen = ({
       </View>
 
       <TouchableOpacity
-        style={[styles.searchButton, { backgroundColor: colors.primary }]}
+        style={[
+          styles.searchButton,
+          { backgroundColor: colors.primary },
+        ]}
         onPress={handleSearch}
       >
         <Text
           style={[
             styles.searchButtonText,
-            { fontSize: fontSizes.button },
+            {
+              fontSize: fontSizes.button,
+            },
           ]}
         >
           Buscar ofertas
         </Text>
       </TouchableOpacity>
 
-      {/* Botón para abrir la pantalla de medicamentos del paciente */}
-    <TouchableOpacity
-      style={[styles.myMedicinesButton, { backgroundColor: '#2D9CDB' }]}
-      onPress={onGoMyMedicines}
-      activeOpacity={0.85}
-    >
-      <View style={styles.myMedicinesButtonContent}>
-        <MaterialCommunityIcons
-          name="pill-multiple"
-          size={38}
-          color="#FFFFFF"
-          style={styles.myMedicinesIcon}
-        />
+      <TouchableOpacity
+        style={[
+          styles.myMedicinesButton,
+          { backgroundColor: '#2D9CDB' },
+        ]}
+        onPress={onGoMyMedicines}
+        activeOpacity={0.85}
+      >
+        <View style={styles.myMedicinesButtonContent}>
+          <MaterialCommunityIcons
+            name="pill-multiple"
+            size={38}
+            color="#FFFFFF"
+            style={styles.myMedicinesIcon}
+          />
 
-        <Text
-          style={[
-            styles.myMedicinesText,
-            { fontSize: fontSizes.normal + 6 },
-          ]}
-        >
-          Mis medicamentos
-        </Text>
+          <Text
+            style={[
+              styles.myMedicinesText,
+              {
+                fontSize: fontSizes.normal + 6,
+              },
+            ]}
+          >
+            Mis medicamentos
+          </Text>
 
-        <Ionicons
-          name="chevron-forward"
-          size={28}
-          color="#FFFFFF"
-        />
-      </View>
-    </TouchableOpacity>
-
+          <Ionicons
+            name="chevron-forward"
+            size={28}
+            color="#FFFFFF"
+          />
+        </View>
+      </TouchableOpacity>
 
       {loading ? (
         <View style={styles.centerContent}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator
+            size="large"
+            color={colors.primary}
+          />
+
           <Text
             style={[
               styles.loadingText,
-              { color: colors.secondaryText, fontSize: fontSizes.normal },
+              {
+                color: colors.secondaryText,
+                fontSize: fontSizes.normal,
+              },
             ]}
           >
             Buscando ofertas...
@@ -252,18 +361,28 @@ const OffersScreen = ({
       ) : (
         <FlatList
           data={offers}
-          keyExtractor={(item, index) => String(item.id_oferta || index)}
+          keyExtractor={(item, index) =>
+            String(index)
+          }
           renderItem={renderItem}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
             searched ? (
               <View style={styles.centerContent}>
-                <Ionicons name="medkit-outline" size={48} color={colors.secondaryText} />
+                <Ionicons
+                  name="medkit-outline"
+                  size={48}
+                  color={colors.secondaryText}
+                />
+
                 <Text
                   style={[
                     styles.emptyText,
-                    { color: colors.secondaryText, fontSize: fontSizes.normal },
+                    {
+                      color: colors.secondaryText,
+                      fontSize: fontSizes.normal,
+                    },
                   ]}
                 >
                   No se encontraron ofertas para ese medicamento.
@@ -274,25 +393,52 @@ const OffersScreen = ({
         />
       )}
 
-      <View style={[styles.bottomNav, { backgroundColor: colors.card }]}>
-        <TouchableOpacity style={styles.navItem} onPress={onGoInventory}>
-          <Ionicons name="home-outline" size={24} color={colors.text} />
+      <View
+        style={[
+          styles.bottomNav,
+          { backgroundColor: colors.card },
+        ]}
+      >
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={onGoInventory}
+        >
+          <Ionicons
+            name="home-outline"
+            size={24}
+            color={colors.text}
+          />
+
           <Text
             style={[
               styles.navText,
-              { color: colors.text, fontSize: fontSizes.small },
+              {
+                color: colors.text,
+                fontSize: fontSizes.small,
+              },
             ]}
           >
             Inicio
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} onPress={onGoAlerts}>
-          <Ionicons name="alert-circle-outline" size={24} color="#E74C3C" />
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={onGoAlerts}
+        >
+          <Ionicons
+            name="alert-circle-outline"
+            size={24}
+            color="#E74C3C"
+          />
+
           <Text
             style={[
               styles.navText,
-              { color: '#E74C3C', fontSize: fontSizes.small },
+              {
+                color: '#E74C3C',
+                fontSize: fontSizes.small,
+              },
             ]}
           >
             Alertas
@@ -300,23 +446,42 @@ const OffersScreen = ({
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="cart" size={24} color="#F39C12" />
+          <Ionicons
+            name="cart"
+            size={24}
+            color="#F39C12"
+          />
+
           <Text
             style={[
               styles.navText,
-              { color: '#F39C12', fontSize: fontSizes.small },
+              {
+                color: '#F39C12',
+                fontSize: fontSizes.small,
+              },
             ]}
           >
             Ofertas
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} onPress={onGoProfile}>
-          <Ionicons name="person-outline" size={24} color={colors.text} />
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={onGoProfile}
+        >
+          <Ionicons
+            name="person-outline"
+            size={24}
+            color={colors.text}
+          />
+
           <Text
             style={[
               styles.navText,
-              { color: colors.text, fontSize: fontSizes.small },
+              {
+                color: colors.text,
+                fontSize: fontSizes.small,
+              },
             ]}
           >
             Perfil
@@ -335,22 +500,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 55,
   },
+
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+
   logoText: {
     fontWeight: '800',
   },
+
   header: {
     fontWeight: 'bold',
     marginTop: 20,
   },
+
   subtitle: {
     marginTop: 8,
     marginBottom: 16,
   },
+
   searchContainer: {
     borderRadius: 16,
     borderWidth: 1,
@@ -359,23 +529,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     marginBottom: 12,
   },
+
   searchIcon: {
     marginRight: 8,
   },
+
   searchInput: {
     flex: 1,
     paddingVertical: 14,
   },
+
   searchButton: {
     borderRadius: 16,
     paddingVertical: 14,
     alignItems: 'center',
     marginBottom: 12,
   },
+
   searchButtonText: {
     color: '#FFFFFF',
     fontWeight: '800',
   },
+
   myMedicinesButton: {
     borderRadius: 26,
     minHeight: 95,
@@ -384,92 +559,110 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     alignSelf: 'center',
     width: '100%',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 6,
     elevation: 6,
   },
+
   myMedicinesButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+
   myMedicinesIcon: {
     marginRight: 14,
   },
+
   myMedicinesText: {
     flex: 1,
     color: '#FFFFFF',
     fontWeight: '900',
   },
-  medicineButtonsContainer: {
-    paddingBottom: 10,
-  },
-  medicineChip: {
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    marginRight: 10,
-    marginBottom: 10,
-  },
-  medicineChipText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  noMedicinesText: {
-    marginBottom: 10,
-  },
+
   listContent: {
     paddingBottom: 100,
   },
+
   card: {
     borderRadius: 18,
     padding: 16,
     marginBottom: 14,
     borderWidth: 1,
   },
+
+  bestPriceRow: {
+    backgroundColor: '#EAF8EE',
+  },
+
+  bestBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#42B65A',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+
+  bestBadgeText: {
+    color: '#FFFFFF',
+    fontWeight: '900',
+    marginLeft: 5,
+    fontSize: 12,
+  },
+
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
   },
+
   medicineName: {
     fontWeight: '800',
     marginLeft: 10,
     flex: 1,
   },
+
+  pharmacy: {
+    fontWeight: '700',
+  },
+
+  availableText: {
+    marginTop: 4,
+    fontWeight: '800',
+  },
+
   priceRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 8,
   },
-  bestPriceRow: {
-    backgroundColor: '#EAF8EE',
-  },
-  pharmacy: {
-    fontWeight: '700',
-  },
+
   priceContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
+
   price: {
-    fontWeight: '700',
+    fontWeight: '900',
     marginRight: 5,
   },
+
   centerContent: {
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 40,
   },
+
   loadingText: {
     marginTop: 10,
   },
+
   emptyText: {
     marginTop: 12,
     textAlign: 'center',
   },
+
   bottomNav: {
     position: 'absolute',
     left: 0,
@@ -483,9 +676,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     elevation: 12,
   },
+
   navItem: {
     alignItems: 'center',
   },
+
   navText: {
     fontWeight: '700',
     marginTop: 3,

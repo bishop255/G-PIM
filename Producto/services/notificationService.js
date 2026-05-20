@@ -292,14 +292,19 @@ export const cancelMedicineReminders = async (notificationIds = []) => {
   }
 };
 
-export const scheduleStockLocalNotification = async ({ medicineName }) => {
+export const scheduleStockLocalNotification = async ({
+  title = '⚠️ Stock crítico',
+  body,
+  medicineName,
+  type = 'stock_alert',
+}) => {
   return await Notifications.scheduleNotificationAsync({
     content: {
-      title: '⚠️ Stock crítico',
-      body: `${medicineName} necesita reposición pronto.`,
+      title,
+      body: body || `${medicineName} necesita reposición pronto.`,
       sound: true,
       data: {
-        type: 'stock_alert',
+        type,
         medicineName,
       },
     },
