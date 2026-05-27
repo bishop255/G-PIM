@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
@@ -11,7 +10,8 @@ import {
 
 import QRCode from 'react-native-qrcode-svg';
 import { Ionicons } from '@expo/vector-icons';
-
+import { getTheme } from '../../theme/theme';
+import { styles } from '../../styles/interfazAdultoMayor/PatientWaitingLinkScreen.styles';
 import { db } from '../../database/firebaseConfig';
 
 import {
@@ -155,126 +155,3 @@ const PatientWaitingLinkScreen = ({ onBack, onLinked }) => {
 
 export default PatientWaitingLinkScreen;
 
-const styles = StyleSheet.create({
-  scroll: {
-    flexGrow: 1,
-    backgroundColor: '#F7F7F7',
-  },
-  container: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 55,
-    paddingBottom: 40,
-  },
-  centerContainer: {
-    flex: 1,
-    backgroundColor: '#F7F7F7',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    color: '#636E72',
-    fontWeight: '800',
-    fontSize: 16,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 26,
-  },
-  headerTitle: {
-    fontSize: 21,
-    fontWeight: '900',
-    color: '#2D3436',
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 32,
-    padding: 24,
-    alignItems: 'center',
-    elevation: 4,
-  },
-  iconBox: {
-    width: 92,
-    height: 92,
-    borderRadius: 28,
-    backgroundColor: '#EAF8EE',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 18,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: '#2D3436',
-    textAlign: 'center',
-  },
-  subtitle: {
-    marginTop: 10,
-    fontSize: 17,
-    color: '#636E72',
-    textAlign: 'center',
-    fontWeight: '700',
-    lineHeight: 24,
-    marginBottom: 24,
-  },
-  qrContainer: {
-    backgroundColor: '#FFFFFF',
-    padding: 18,
-    borderRadius: 28,
-    borderWidth: 1,
-    borderColor: '#DFE6E9',
-    marginBottom: 22,
-  },
-  errorText: {
-    color: '#E74C3C',
-    fontSize: 15,
-    fontWeight: '800',
-    textAlign: 'center',
-    marginBottom: 18,
-  },
-  codeLabel: {
-    fontSize: 14,
-    color: '#636E72',
-    fontWeight: '900',
-    marginBottom: 8,
-  },
-  codeBox: {
-    backgroundColor: '#F1F2F6',
-    borderRadius: 18,
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    marginBottom: 18,
-  },
-  codeText: {
-    color: '#2D3436',
-    fontSize: 24,
-    fontWeight: '900',
-    letterSpacing: 1.3,
-  },
-  waitingBox: {
-    marginTop: 4,
-    backgroundColor: '#EAF8EE',
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  waitingText: {
-    marginLeft: 10,
-    color: '#27AE60',
-    fontSize: 14,
-    fontWeight: '900',
-  },
-  helperText: {
-    marginTop: 18,
-    fontSize: 14,
-    color: '#636E72',
-    textAlign: 'center',
-    fontWeight: '700',
-    lineHeight: 20,
-  },
-});
