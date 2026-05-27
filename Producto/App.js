@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-
+import React, { useState, useEffect, useRef } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Alert } from 'react-native';
 import { auth, db } from './database/firebaseConfig';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
@@ -9,13 +9,11 @@ import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { registerMedicineDoseTaken } from './services/medicineTakenService';
-import { schedulePatientMedicineReminders } from './services/patientReminderService';
-
+import { schedulePatientMedicineReminders, cancelPatientDoseReminders } from './services/patientReminderService';
 import {
-  scheduleSnoozeReminder,
-  setupNotifications,
+  scheduleSnoozeReminder, setupNotifications,
 } from './services/notificationService';
-
+import { checkAndNotifyStockAlerts } from './services/stockAlertService';
 
 // Importación de pantallas
 import SplashScreen from './screens/SplashScreen';
@@ -29,8 +27,10 @@ import PatientQRScreen from './screens/interfazAdultoMayor/PatientQRScreen';
 import PatientWaitingLinkScreen from './screens/interfazAdultoMayor/PatientWaitingLinkScreen';
 
 import HomeScreen from './screens/interfazAdultoMayor/HomeScreen';
+import MyMedicinesOffersScreen from './screens/interfazCuidador/MyMedicinesOffersScreen';
 import EmergencyScreen from './screens/interfazAdultoMayor/EmergencyScreen';
 import TakeMedicineScreen from './screens/interfazAdultoMayor/TakeMedicineScreen';
+import PatientLowStockScreen from './screens/interfazAdultoMayor/PatientLowStockScreen';
 
 import LinkPatientScreen from './screens/interfazCuidador/LinkPatientScreen';
 import InventoryScreen from './screens/interfazCuidador/InventoryScreen';
@@ -42,15 +42,19 @@ import MedicineDetailScreen from './screens/interfazCuidador/MedicineDetailScree
 import HistoryScreen from './screens/interfazCuidador/HistoryScreen';
 import SettingsScreen from './screens/interfazCuidador/SettingsScreen';
 import ProfileScreen from './screens/interfazCuidador/ProfileScreen';
+import EditProfileScreen from './screens/interfazCuidador/EditProfileScreen';
+import DashboardScreen from './screens/interfazCuidador/DashboardScreen';
+import EmergencyHistoryScreen from './screens/interfazCuidador/EmergencyHistoryScreen';
 
 
-
-export default function App() {
+function MainApp() {
   const [screen, setScreen] = useState('splash');
   const [selectedMedicine, setSelectedMedicine] = useState(null);
   const [settings, setSettings] = useState({ darkMode: false, largeText: false})
   const [patientId, setPatientId] = useState(null);
   const [adultPatientData, setAdultPatientData] = useState(null);
+  const lastReminderFingerprintRef = useRef(null);
+  const schedulingRemindersRef = useRef(false);
 
   useEffect(() => {
   const subscription = Notifications.addNotificationResponseReceivedListener(
@@ -105,15 +109,21 @@ export default function App() {
           return;
         }
 
+        await cancelPatientDoseReminders({
+          patientId,
+          medicineId,
+          scheduleIndex,
+        });
+
         await Notifications.scheduleNotificationAsync({
           content: {
-            title: '💊 Dosis registrada ✅',
+            title: '✅ Dosis registrada',
             body: `${medicineName} fue marcado como tomado.`,
             sound: true,
           },
           trigger: null,
         });
-}
+      }
     }
   );
 
@@ -123,7 +133,7 @@ export default function App() {
 }, [patientId]);
 
 useEffect(() => {
-  // setupNotifications(); // ⚠️ Se activa cuando hay usuario autenticado
+  // setupNotifications(); //  Se activa cuando hay usuario autenticado
 
 
   const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -141,6 +151,8 @@ useEffect(() => {
             // Si ya tiene paciente -> inventario
             if (userData.hasPatient && userData.patientId) {
               setPatientId(userData.patientId);
+
+              await checkAndNotifyStockAlerts(userData.patientId);
               setScreen('inventory');
             }
 
@@ -237,6 +249,69 @@ useEffect(() => {
 
     return unsubscribe;
   }, [patientId, screen]);
+
+useEffect(() => {
+  const isAdultPatientFlow =
+    screen === 'adultoMayorHome' ||
+    screen === 'takeMedicine' ||
+    screen === 'adultoMayorEmergency';
+
+  if (!patientId || !isAdultPatientFlow) return;
+
+  const inventoryRef = collection(db, 'pacientes', patientId, 'inventario');
+
+  const buildReminderFingerprint = (snapshot) => {
+    const reminderData = snapshot.docs
+      .map((docItem) => {
+        const data = docItem.data();
+
+        return {
+          id: docItem.id,
+          name: data.name || '',
+          reminderEnabled: data.reminderEnabled === true,
+          dailyDose: Number(data.dailyDose || 0),
+          schedules: Array.isArray(data.schedules) ? data.schedules : [],
+        };
+      })
+      .sort((a, b) => a.id.localeCompare(b.id));
+
+    return JSON.stringify(reminderData);
+  };
+
+  const unsubscribe = onSnapshot(
+    inventoryRef,
+    async (snapshot) => {
+      const newFingerprint = buildReminderFingerprint(snapshot);
+
+      if (lastReminderFingerprintRef.current === newFingerprint) {
+        console.log('Inventario cambió, pero los horarios siguen iguales. No se reprograma.');
+        return;
+      }
+
+      if (schedulingRemindersRef.current) {
+        console.log('Ya se están reprogramando recordatorios. Se omite este ciclo.');
+        return;
+      }
+
+      try {
+        schedulingRemindersRef.current = true;
+        lastReminderFingerprintRef.current = newFingerprint;
+
+        console.log('Horarios modificados. Reprogramando recordatorios del paciente...');
+        await schedulePatientMedicineReminders(patientId);
+      } catch (error) {
+        console.error('Error reprogramando recordatorios:', error);
+      } finally {
+        schedulingRemindersRef.current = false;
+      }
+    },
+    (error) => {
+      console.error('Error escuchando cambios del inventario:', error);
+    }
+  );
+
+  return unsubscribe;
+}, [patientId, screen]);
 
 
   const updateSettings = (newSettings) => {
@@ -452,28 +527,23 @@ const handleLogout = async () => {
 }
 
   if (screen === 'adultoMayorHome') {
-      return (
-      <HomeScreen
-        patientData={adultPatientData}
-        onBack={() => setScreen('select')}
-        onTakeMedicine={() => setScreen('takeMedicine')}
-        onLowStock={() =>
-          Alert.alert('Próximamente', 'Aquí irá la opción de stock bajo')
-        }
-        onEmergency={() => setScreen('adultoMayorEmergency')}
-      />
-    );
-  }
+    return (
+    <HomeScreen
+      patientData={adultPatientData}
+      onBack={() => setScreen('select')}
+      onTakeMedicine={() => setScreen('takeMedicine')}
+      onLowStock={() => setScreen('patientLowStock')}
+      onEmergency={() => setScreen('adultoMayorEmergency')}
+    />
+  );
+}
 
   if (screen === 'adultoMayorEmergency') {
     return (
       <EmergencyScreen
-      onBack={() => setScreen('adultoMayorHome')}
-      onCallFamily={() =>
-        Alert.alert('Próximamente', 'Aquí irá la llamada al familiar')
-      }
-      onSendAlert={() => {}}
-      onCancel={() => setScreen('adultoMayorHome')}
+        patientId={patientId}
+        onBack={() => setScreen('adultoMayorHome')}
+        onCancel={() => setScreen('adultoMayorHome')}
       />
     );
   }
@@ -486,6 +556,17 @@ const handleLogout = async () => {
       />
     );
 }
+
+// Pantalla para reportar al cuidador que un medicamento está por agotarse
+  if (screen === 'patientLowStock') {
+    return (
+      <PatientLowStockScreen
+        patientId={patientId}
+        settings={settings}
+        onBack={() => setScreen('adultoMayorHome')}
+      />
+    );
+  }
 
   //---------- Inicio ----------------
 
@@ -507,9 +588,11 @@ const handleLogout = async () => {
           setSelectedMedicine(medicine);
           setScreen('medicineDetail');
         }}
+        onEmergencyHistoryPress={() => setScreen('emergencyHistory')}
         onHistoryPress={() => setScreen('history')}
         onSettingsPress={() => setScreen('settings')}
         onProfilePress={() => setScreen('profile')}
+        onDashboardPress={() => setScreen('dashboard')}
         onLogout={handleLogout}
         onLinkPatientPress={() => setScreen('linkPatient')}
       />
@@ -557,6 +640,17 @@ const handleLogout = async () => {
     );
   }
 
+  // Dashboard
+  if (screen === 'dashboard') {
+    return (
+      <DashboardScreen
+        patientId={patientId}
+        settings={settings}
+        onBack={() => setScreen('inventory')}
+      />
+    );
+  }
+
   //----------Menu Navegacion----------------
 
   // Alertas
@@ -574,14 +668,28 @@ const handleLogout = async () => {
   }
 
   // Ofertas
+  // Pantalla principal del comparador de ofertas
   if (screen === 'offers') {
     return (
       <OffersScreen
-      settings={settings}
-      onBack={() => setScreen('inventory')}
-      onGoInventory={() => setScreen('inventory')}
-      onGoAlerts={() => setScreen('alerts')}
-      onGoProfile={() => setScreen('profile')}
+        patientId={patientId}
+        settings={settings}
+        onBack={() => setScreen('inventory')}
+        onGoInventory={() => setScreen('inventory')}
+        onGoAlerts={() => setScreen('alerts')}
+        onGoProfile={() => setScreen('profile')}
+        onGoMyMedicines={() => setScreen('myMedicinesOffers')}
+      />
+    );
+  }
+
+  // Pantalla que muestra los medicamentos del paciente con comparador de ofertas
+  if (screen === 'myMedicinesOffers') {
+    return (
+      <MyMedicinesOffersScreen
+        patientId={patientId}
+        settings={settings}
+        onBack={() => setScreen('offers')}
       />
     );
   }
@@ -594,6 +702,22 @@ const handleLogout = async () => {
         patientId={patientId}
         onBack={() => setScreen('inventory')}
         onLogout={handleLogout}
+        onEditProfile={() => setScreen('editProfile')}
+        onGoInventory={() => setScreen('inventory')}
+        onGoAlerts={() => setScreen('alerts')}
+        onGoOffers={() => setScreen('offers')}
+        onGoProfile={() => setScreen('profile')}
+      />
+    );
+  }
+
+  if (screen === 'editProfile') {
+    return (
+      <EditProfileScreen
+        settings={settings}
+        patientId={patientId}
+        onBack={() => setScreen('profile')}
+        onSaved={() => setScreen('profile')}
       />
     );
   }
@@ -622,7 +746,26 @@ const handleLogout = async () => {
     )
   }
 
+  // Historial Emergencias
+  if (screen === 'emergencyHistory') {
+    return (
+      <EmergencyHistoryScreen
+        patientId={patientId}
+        settings={settings}
+        onBack={() => setScreen('inventory')}
+      />
+    );
+  }
 
 
   return null;
 }
+
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <MainApp />
+    </SafeAreaProvider>
+  );
+}
+

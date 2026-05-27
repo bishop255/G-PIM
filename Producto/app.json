@@ -21,7 +21,12 @@
         "backgroundColor": "#42B65A"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.GPIMApp"
+      "package": "com.anonymous.GPIMApp",
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -36,6 +41,11 @@
         }
       ],
       "@react-native-community/datetimepicker"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "1e06884b-ad1c-46c4-9953-2acf61688c68"
+      }
+    }
   }
 }

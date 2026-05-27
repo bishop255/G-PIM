@@ -79,6 +79,21 @@ const SideMenu = ({ visible, onClose, onNavigate, settings }) => {
 
           <TouchableOpacity
             style={styles.item}
+            onPress={() => onNavigate('emergencyHistory')}
+          >
+            <Ionicons name="warning-outline" size={22} color={colors.text} />
+            <Text
+              style={[
+                styles.text,
+                { color: colors.text, fontSize: fontSizes.normal },
+              ]}
+            >
+              Emergencias
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.item}
             onPress={() => onNavigate('profile')}
           >
             <Ionicons name="person-outline" size={22} color={colors.text} />

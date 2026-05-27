@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import {styles} from '../../styles/interfazCuidador/SettingsScreen.styles';
 import { getTheme } from '../../theme/theme';
 
 const SettingsScreen = ({ onBack, settings, onUpdateSettings }) => {
@@ -105,43 +105,3 @@ const SettingsScreen = ({ onBack, settings, onUpdateSettings }) => {
 
 export default SettingsScreen;
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    paddingTop: 55,
-  },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  title: {
-    fontWeight: '800',
-  },
-  card: {
-    marginTop: 25,
-    borderRadius: 20,
-    padding: 18,
-    borderWidth: 1,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 18,
-  },
-  rowLast: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  rowLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  text: {
-    marginLeft: 10,
-    fontWeight: '700',
-  },
-});

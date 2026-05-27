@@ -9,7 +9,6 @@ import {
 } from 'firebase/firestore';
 
 import { sendExpoPushNotification } from './notificationService';
-
 import { db } from '../database/firebaseConfig';
 
 const BEFORE_MINUTES = 30;
@@ -103,63 +102,51 @@ const notifyCaregivers = async ({
       ? patientData.cuidadores
       : [];
 
-    console.log('Cuidadores encontrados:', caregiverIds);
+    const isTaken = type === 'medicine_taken';
+
+    const title = isTaken
+      ? '✅ Medicamento registrado'
+      : '⚠️ Dosis omitida';
+
+    const message = isTaken
+      ? `${patientName} tomó ${medicineName} (${scheduledTime})`
+      : `${patientName} no registró ${medicineName} (${scheduledTime})`;
 
     for (const caregiverId of caregiverIds) {
       const caregiverRef = doc(db, 'usuarios', caregiverId);
       const caregiverSnap = await getDoc(caregiverRef);
 
-      if (!caregiverSnap.exists()) {
-        console.log('Cuidador no encontrado:', caregiverId);
-        continue;
-      }
+      if (!caregiverSnap.exists()) continue;
 
       const caregiverData = caregiverSnap.data();
 
-      const isTaken = type === 'medicine_taken';
-
-      const message = isTaken
-        ? `${patientName} tomó ${medicineName} (${scheduledTime})`
-        : `${patientName} no registró ${medicineName} (${scheduledTime})`;
-
       await addDoc(collection(db, 'usuarios', caregiverId, 'alertas'), {
-        type: 'medicine_missed',
+        type,
         patientId,
         medicineId,
         patientName,
-        medicineName: medicine.name,
+        medicineName,
         scheduledTime,
-        amount: doseAmount,
+        amount,
         stockUnit,
-        source: 'system',
-        message: `${patientName} OMITIÓ ${medicine.name} (${scheduledTime})`,
+        source,
+        message,
         read: false,
         createdAt: serverTimestamp(),
       });
 
-    if (caregiverData.expoPushToken) {
-      await sendExpoPushNotification({
-        expoPushToken: caregiverData.expoPushToken,
-        title: '⚠️ Dosis omitida',
-        body: `${patientName} no tomó ${medicine.name} (${scheduledTime})`,
-        data: {
-          type: 'medicine_missed',
-          patientId,
-          medicineId,
-        },
-      });
-    }
-
-      await sendExpoPushNotification({
-        expoPushToken: caregiverData.expoPushToken,
-        title: isTaken ? '✅ Medicamento registrado' : '⚠️ Dosis omitida',
-        body: message,
-        data: {
-          type,
-          patientId,
-          medicineId,
-        },
-      });
+      if (caregiverData.expoPushToken) {
+        await sendExpoPushNotification({
+          expoPushToken: caregiverData.expoPushToken,
+          title,
+          body: message,
+          data: {
+            type,
+            patientId,
+            medicineId,
+          },
+        });
+      }
     }
   } catch (error) {
     console.error('Error notificando al cuidador:', error);

@@ -1,5 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
+import Constants from 'expo-constants';
+
 import { Platform, Alert } from 'react-native';
 import { doc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../database/firebaseConfig';
@@ -55,6 +57,14 @@ export const setupNotifications = async () => {
         sound: 'default',
       });
 
+      await Notifications.setNotificationChannelAsync('stock-alerts', {
+        name: 'Alertas de stock',
+        importance: Notifications.AndroidImportance.HIGH,
+        vibrationPattern: [0, 300, 200, 300],
+        lightColor: '#F39C12',
+        sound: 'default',
+      });
+
       console.log('Canales Android configurados.');
     }
 
@@ -85,7 +95,17 @@ export const setupNotifications = async () => {
       return null;
     }
 
-    const tokenResponse = await Notifications.getExpoPushTokenAsync();
+    const projectId =
+      Constants?.expoConfig?.extra?.eas?.projectId ||
+      Constants?.easConfig?.projectId ||
+      '1e06884b-ad1c-46c4-9953-2acf61688c68';
+
+    console.log('Project ID usado para push:', projectId);
+
+    const tokenResponse = await Notifications.getExpoPushTokenAsync({
+      projectId,
+    });
+
     const token = tokenResponse.data;
 
     console.log('Expo push token generado:', token);
@@ -118,6 +138,7 @@ export const scheduleMedicineReminder = async ({
   medicineId,
   medicineName,
   scheduleIndex,
+  reminderAttempt = 0,
 }) => {
   return await Notifications.scheduleNotificationAsync({
     content: {
@@ -130,6 +151,7 @@ export const scheduleMedicineReminder = async ({
         medicineId,
         medicineName,
         scheduleIndex,
+        reminderAttempt,
       },
     },
     trigger: {
@@ -145,11 +167,26 @@ export const scheduleMedicineReminders = async ({
   medicineId,
   medicineName,
   schedules = [],
+  scheduleIndexes = [],
 }) => {
   const notificationIds = [];
 
+  const addMinutesToSchedule = (hour, minute, extraMinutes) => {
+    const date = new Date();
+    date.setHours(Number(hour));
+    date.setMinutes(Number(minute) + extraMinutes);
+    date.setSeconds(0);
+    date.setMilliseconds(0);
+
+    return {
+      hour: date.getHours(),
+      minute: date.getMinutes(),
+    };
+  };
+
   for (let index = 0; index < schedules.length; index++) {
     const schedule = schedules[index];
+    const originalScheduleIndex = scheduleIndexes[index] ?? index;
 
     if (
       schedule?.hour === undefined ||
@@ -158,21 +195,60 @@ export const scheduleMedicineReminders = async ({
       continue;
     }
 
-    const notificationId = await scheduleMedicineReminder({
+    const mainId = await scheduleMedicineReminder({
       medicineId,
       medicineName,
-      scheduleIndex: index,
+      scheduleIndex: originalScheduleIndex,
+      reminderAttempt: 0,
       title: `💊 Hora de tomar ${medicineName}`,
       body: `Recuerda tomar tu dosis de ${medicineName}.`,
       hour: Number(schedule.hour),
       minute: Number(schedule.minute),
     });
 
-    notificationIds.push(notificationId);
+    notificationIds.push(mainId);
+
+    const retryOneTime = addMinutesToSchedule(
+      schedule.hour,
+      schedule.minute,
+      5
+    );
+
+    const retryOneId = await scheduleMedicineReminder({
+      medicineId,
+      medicineName,
+      scheduleIndex: originalScheduleIndex,
+      reminderAttempt: 1,
+      title: `⏰ Recordatorio: ${medicineName}`,
+      body: `Aún no registras tu dosis de ${medicineName}.`,
+      hour: retryOneTime.hour,
+      minute: retryOneTime.minute,
+    });
+
+    notificationIds.push(retryOneId);
+
+    const retryTwoTime = addMinutesToSchedule(
+      schedule.hour,
+      schedule.minute,
+      10
+    );
+
+    const retryTwoId = await scheduleMedicineReminder({
+      medicineId,
+      medicineName,
+      scheduleIndex: originalScheduleIndex,
+      reminderAttempt: 2,
+      title: `⚠️ Último aviso: ${medicineName}`,
+      body: `Registra tu dosis de ${medicineName} si ya la tomaste.`,
+      hour: retryTwoTime.hour,
+      minute: retryTwoTime.minute,
+    });
+
+    notificationIds.push(retryTwoId);
   }
 
   console.log(
-    `Recordatorios programados para ${medicineName}:`,
+    `Recordatorios + reintentos programados para ${medicineName}:`,
     notificationIds.length
   );
 
@@ -186,7 +262,7 @@ export const scheduleSnoozeReminder = async ({
 }) => {
   return await Notifications.scheduleNotificationAsync({
     content: {
-      title: `Recordatorio: ${medicineName}`,
+      title: `⏰ Recordatorio: ${medicineName}`,
       body: 'Te avisamos nuevamente para que tomes tu medicamento.',
       sound: true,
       categoryIdentifier: 'MEDICINE_REMINDER',
@@ -216,14 +292,20 @@ export const cancelMedicineReminders = async (notificationIds = []) => {
   }
 };
 
-export const scheduleStockLocalNotification = async ({ medicineName }) => {
+export const scheduleStockLocalNotification = async ({
+  title = '⚠️ Stock crítico',
+  body,
+  medicineName,
+  type = 'stock_alert',
+}) => {
   return await Notifications.scheduleNotificationAsync({
     content: {
-      title: 'Stock crítico',
-      body: `${medicineName} necesita reposición pronto.`,
+      title,
+      body: body || `${medicineName} necesita reposición pronto.`,
       sound: true,
       data: {
-        type: 'stock_alert',
+        type,
+        medicineName,
       },
     },
     trigger: null,
