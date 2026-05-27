@@ -17,7 +17,7 @@ import { styles } from '../../styles/interfazCuidador/OffersScreen.styles';
 import { getTheme } from '../../theme/theme';
 import { useInventory } from '../../hook/useInventory';
 
-const API_URL = 'http://192.168.1.100:3001/api/prices';
+const API_URL = 'http://192.168.100.10:3001/api/prices';
 
 const OffersScreen = ({
   patientId,
@@ -233,16 +233,13 @@ const OffersScreen = ({
           <Text
             style={[
               styles.logoText,
-              {
-                color: colors.text,
-                fontSize: fontSizes.header,
-              },
+              { color: colors.text, fontSize: fontSizes.header },
             ]}
           >
             Ofertas
           </Text>
 
-          <Ionicons name="cart" size={24} color="#F39C12" />
+          <View style={{ width: 24 }} />
         </View>
 
         <Text
