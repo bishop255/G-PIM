@@ -70,10 +70,16 @@ const TakeMedicineScreen = ({ patientId, onBack }) => {
       try {
         setCheckingMissed(true);
 
-        for (const medicine of medicines) {
-          const schedules = Array.isArray(medicine.schedules)
-            ? medicine.schedules
-            : [];
+      for (const medicine of medicines) {
+        const currentStock = Number(medicine.currentStock || 0);
+
+        if (currentStock <= 0) {
+          continue;
+        }
+
+        const schedules = Array.isArray(medicine.schedules)
+          ? medicine.schedules
+          : [];
 
           for (let index = 0; index < schedules.length; index++) {
             const schedule = schedules[index];
@@ -135,8 +141,16 @@ const TakeMedicineScreen = ({ patientId, onBack }) => {
 
         const windowStatus = getDoseWindowStatus(schedule);
 
+        const currentStock = Number(medicine.currentStock || 0);
+        const isOutOfStock = currentStock <= 0;
+
         let status = windowStatus.status;
         let statusLabel = windowStatus.label;
+
+        if (isOutOfStock) {
+          status = 'out_of_stock';
+          statusLabel = 'Sin stock disponible';
+        }
 
         if (isTaken) {
           status = 'taken';
@@ -247,6 +261,16 @@ const TakeMedicineScreen = ({ patientId, onBack }) => {
           buttonColor: '#E74C3C',
           buttonIcon: 'close-circle',
         };
+
+        case 'out_of_stock':
+          return {
+            background: '#FDECEC',
+            color: '#E74C3C',
+            icon: 'alert-circle-outline',
+            buttonText: 'Sin stock',
+            buttonColor: '#E74C3C',
+            buttonIcon: 'alert-circle',
+          };
 
       case 'locked':
         return {
