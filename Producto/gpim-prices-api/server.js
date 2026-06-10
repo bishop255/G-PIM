@@ -39,7 +39,7 @@ const extractPrice = (text = '') => {
     .map((match) => {
       const raw = match.replace('$', '').trim();
 
-      // Evita decimales raros como $9.33
+      // Evita decimales raros 
       const parts = raw.split('.');
       if (parts.length > 1 && parts.some((part, index) => index > 0 && part.length !== 3)) {
         return null;
