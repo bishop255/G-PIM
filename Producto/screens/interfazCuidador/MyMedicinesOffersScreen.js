@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 import { getTheme } from '../../theme/theme';
-import { styles } from '../../styles/interfazCuidador/OffersScreen.styles';
+import { styles } from '../../styles/interfazCuidador/MyMedicinesOffersScreen.styles';
 import { useInventory } from '../../hook/useInventory';
 
 const API_URL = 'http://192.168.100.10:3001/api/prices';
@@ -124,7 +124,7 @@ const MyMedicinesOffersScreen = ({ patientId, settings, onBack }) => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={onBack}>
+        <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
 
@@ -153,6 +153,36 @@ const MyMedicinesOffersScreen = ({ patientId, settings, onBack }) => {
         Selecciona un medicamento
       </Text>
 
+      <View style={styles.summaryCard}>
+        <View style={styles.summaryIconBox}>
+          <MaterialCommunityIcons
+            name="pill-multiple"
+            size={28}
+            color="#42B65A"
+          />
+        </View>
+
+        <View style={{ flex: 1 }}>
+          <Text
+            style={[
+              styles.summaryTitle,
+              { fontSize: fontSizes.normal + 1 },
+            ]}
+          >
+            {uniqueMedicines.length} medicamento(s) registrados
+          </Text>
+
+          <Text
+            style={[
+              styles.summaryText,
+              { fontSize: fontSizes.small },
+            ]}
+          >
+            Selecciona uno para comparar precios.
+          </Text>
+        </View>
+      </View>
+
       <Text
         style={[
           styles.subtitle,
@@ -176,38 +206,61 @@ const MyMedicinesOffersScreen = ({ patientId, settings, onBack }) => {
                   style={[
                     styles.medicineCard,
                     {
-                      backgroundColor: isExpanded ? '#2D9CDB' : colors.card,
+                      backgroundColor: colors.card,
                       borderColor: colors.border,
                     },
+                    isExpanded && styles.medicineCardExpanded,
                   ]}
                   onPress={() => handleToggleMedicine(medicineName)}
                   activeOpacity={0.85}
                 >
-                  <View style={styles.medicineCardContent}>
+                <View style={styles.medicineCardContent}>
+                  <View
+                    style={[
+                      styles.medicineIconBox,
+                      isExpanded && styles.medicineIconBoxExpanded,
+                    ]}
+                  >
                     <MaterialCommunityIcons
                       name="pill"
-                      size={34}
+                      size={32}
                       color={isExpanded ? '#FFFFFF' : colors.primary}
                     />
+                  </View>
 
+                  <View style={styles.medicineTextBlock}>
                     <Text
                       style={[
                         styles.medicineCardText,
                         {
                           color: isExpanded ? '#FFFFFF' : colors.text,
-                          fontSize: fontSizes.normal + 2,
+                          fontSize: fontSizes.normal + 3,
                         },
                       ]}
+                      numberOfLines={1}
                     >
                       {medicineName}
                     </Text>
 
-                    <Ionicons
-                      name={isExpanded ? 'chevron-up' : 'chevron-forward'}
-                      size={24}
-                      color={isExpanded ? '#FFFFFF' : colors.text}
-                    />
+                    <Text
+                      style={[
+                        styles.medicineHint,
+                        {
+                          color: isExpanded ? '#EAF3FF' : colors.secondaryText,
+                          fontSize: fontSizes.small,
+                        },
+                      ]}
+                    >
+                      Ver mejores precios disponibles
+                    </Text>
                   </View>
+
+                  <Ionicons
+                    name={isExpanded ? 'chevron-up' : 'chevron-forward'}
+                    size={26}
+                    color={isExpanded ? '#FFFFFF' : colors.text}
+                  />
+                </View>
                 </TouchableOpacity>
 
                 {isExpanded && (
