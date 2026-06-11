@@ -9,9 +9,17 @@ import {
   Alert,
 } from 'react-native';
 
+import {
+  doc,
+  getDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+} from 'firebase/firestore';
+
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { doc, getDoc } from 'firebase/firestore';
 import { styles } from '../../styles/interfazCuidador/ProfileScreen.styles';
 import { getTheme } from '../../theme/theme';
 import { auth, db } from '../../database/firebaseConfig';
@@ -33,6 +41,8 @@ const ProfileScreen = ({
   const [caregiverData, setCaregiverData] = useState(null);
   const [patientData, setPatientData] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const [isPatientConnected, setIsPatientConnected] = useState(false);
 
   useEffect(() => {
     const loadProfileData = async () => {
@@ -59,11 +69,36 @@ const ProfileScreen = ({
           const patientSnap = await getDoc(patientRef);
 
           if (patientSnap.exists()) {
+            const data = patientSnap.data();
+
+            const cuidadores = Array.isArray(data.cuidadores)
+              ? data.cuidadores
+              : [];
+
+            const linkQuery = query(
+              collection(db, 'patientLinkRequests'),
+              where('patientId', '==', patientId),
+              where('caregiverId', '==', user.uid),
+              where('estado', '==', 'vinculado')
+            );
+
+            const linkSnap = await getDocs(linkQuery);
+
+            const stillConnected = !linkSnap.empty;
+
             setPatientData({
               id: patientSnap.id,
-              ...patientSnap.data(),
+              ...data,
             });
+
+            setIsPatientConnected(stillConnected);
+          } else {
+            setPatientData(null);
+            setIsPatientConnected(false);
           }
+        } else {
+          setPatientData(null);
+          setIsPatientConnected(false);
         }
       } catch (error) {
         console.error('Error cargando perfil:', error);
@@ -77,13 +112,14 @@ const ProfileScreen = ({
   }, [patientId]);
 
   const caregiverName = caregiverData?.name || 'Cuidador';
-  const caregiverEmail =
-    caregiverData?.email || auth.currentUser?.email || 'Correo no disponible';
+  const caregiverEmail = caregiverData?.email || auth.currentUser?.email || 'Correo no disponible';
   const caregiverPhone = caregiverData?.phone || 'No registrado';
   const caregiverRelationship = caregiverData?.relationship || 'No definido';
 
   const patientName =
-    patientData?.nombre || patientData?.name || 'No hay paciente vinculado';
+    isPatientConnected
+      ? patientData?.nombre || patientData?.name || 'Paciente vinculado'
+      : 'Paciente no conectado';
 
   if (loading) {
     return (
@@ -221,23 +257,23 @@ const ProfileScreen = ({
               style={[
                 styles.connectionBadge,
                 {
-                  backgroundColor: patientData ? '#EAF8EE' : '#F1F2F6',
+                  backgroundColor: isPatientConnected ? '#EAF8EE' : '#F1F2F6',
                 },
               ]}
             >
               <Ionicons
-                name={patientData ? 'checkmark-circle-outline' : 'alert-circle-outline'}
+                name={isPatientConnected ? 'checkmark-circle-outline' : 'alert-circle-outline'}
                 size={18}
-                color={patientData ? '#27AE60' : '#636E72'}
+                color={isPatientConnected ? '#27AE60' : '#636E72'}
               />
 
               <Text
                 style={[
                   styles.connectionText,
-                  { color: patientData ? '#27AE60' : '#636E72' },
+                  { color: isPatientConnected ? '#27AE60' : '#636E72' },
                 ]}
               >
-                {patientData ? 'Conectado correctamente' : 'Sin conexión activa'}
+                {isPatientConnected ? 'Conectado correctamente' : 'Paciente no conectado'}
               </Text>
             </View>
           </View>

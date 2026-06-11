@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Modal,
   TextInput,
+  StyleSheet,
 } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
@@ -102,13 +103,22 @@ const LinkPatientScreen = ({ patientId, onBack, onLinked }) => {
   };
 
   const unlinkPatient = async () => {
-    if (!activeLinkRequestId) return;
+    const user = auth.currentUser;
+
+    if (!activeLinkRequestId || !user || !patientId) return;
 
     try {
       setLoading(true);
 
       await updateDoc(doc(db, 'patientLinkRequests', activeLinkRequestId), {
         estado: 'desvinculado',
+        unlinkedAt: serverTimestamp(),
+        unlinkedBy: user.uid,
+      });
+
+
+      await updateDoc(doc(db, 'pacientes', patientId), {
+        estadoVinculacion: 'desvinculado',
         unlinkedAt: serverTimestamp(),
       });
 
