@@ -169,4 +169,22 @@ export const styles = StyleSheet.create({
     marginTop: 12,
     textAlign: 'center',
   },
+
+  offlineBanner: {
+    backgroundColor: '#FFF8E1',
+    borderRadius: 16,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#F39C12',
+  },
+
+  offlineBannerText: {
+    color: '#D68910',
+    fontWeight: '800',
+    marginLeft: 8,
+    flex: 1,
+  },
 });

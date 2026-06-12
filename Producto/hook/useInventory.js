@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import { db } from '../database/firebaseConfig';
 import {
   collection,
@@ -11,37 +13,114 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 
+const getInventoryCacheKey = (pacienteId) => `inventoryCache_${pacienteId}`;
+
 export const useInventory = (pacienteId) => {
   const [medicines, setMedicines] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isOfflineData, setIsOfflineData] = useState(false);
+
+  const loadCachedInventory = async () => {
+    try {
+      if (!pacienteId) return false;
+
+      const cachedRaw = await AsyncStorage.getItem(
+        getInventoryCacheKey(pacienteId)
+      );
+
+      if (!cachedRaw) return false;
+
+      const cachedMedicines = JSON.parse(cachedRaw);
+
+      if (Array.isArray(cachedMedicines)) {
+        setMedicines(cachedMedicines);
+        setIsOfflineData(true);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Error cargando inventario local:', error);
+      return false;
+    }
+  };
+
+  const saveInventoryCache = async (medicineList) => {
+    try {
+      if (!pacienteId) return;
+
+      await AsyncStorage.setItem(
+        getInventoryCacheKey(pacienteId),
+        JSON.stringify(medicineList)
+      );
+    } catch (error) {
+      console.error('Error guardando inventario local:', error);
+    }
+  };
 
   useEffect(() => {
-    if (!pacienteId) {
-      setMedicines([]);
-      setLoading(false);
-      return;
-    }
+    let unsubscribe = null;
+    let isMounted = true;
 
-    const inventoryRef = collection(db, 'pacientes', pacienteId, 'inventario');
-
-    const unsubscribe = onSnapshot(
-      inventoryRef,
-      (snapshot) => {
-        const medicineList = snapshot.docs.map((item) => ({
-          id: item.id,
-          ...item.data(),
-        }));
-
-        setMedicines(medicineList);
+    const startInventoryListener = async () => {
+      if (!pacienteId) {
+        setMedicines([]);
         setLoading(false);
-      },
-      (error) => {
-        console.error('Error obteniendo inventario:', error);
+        setIsOfflineData(false);
+        return;
+      }
+
+      setLoading(true);
+
+      const hasCache = await loadCachedInventory();
+
+      if (hasCache && isMounted) {
         setLoading(false);
       }
-    );
 
-    return () => unsubscribe();
+      const inventoryRef = collection(db, 'pacientes', pacienteId, 'inventario');
+
+      unsubscribe = onSnapshot(
+        inventoryRef,
+        async (snapshot) => {
+          const medicineList = snapshot.docs.map((item) => ({
+            id: item.id,
+            ...item.data(),
+          }));
+
+          if (!isMounted) return;
+
+          setMedicines(medicineList);
+          setIsOfflineData(false);
+          setLoading(false);
+
+          await saveInventoryCache(medicineList);
+        },
+        async (error) => {
+          console.error('Error obteniendo inventario:', error);
+
+          const loadedCache = await loadCachedInventory();
+
+          if (!loadedCache && isMounted) {
+            setMedicines([]);
+          }
+
+          if (isMounted) {
+            setLoading(false);
+          }
+        }
+      );
+    };
+
+    startInventoryListener();
+
+    return () => {
+      isMounted = false;
+
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, [pacienteId]);
 
   const addMovement = async (movementData) => {
@@ -158,7 +237,10 @@ export const useInventory = (pacienteId) => {
       await addDoc(inventoryRef, {
         ...medicineData,
         currentStock: Number(medicineData.currentStock) || 0,
-        initialStock: Number(medicineData.initialStock) || Number(medicineData.currentStock) || 0,
+        initialStock:
+          Number(medicineData.initialStock) ||
+          Number(medicineData.currentStock) ||
+          0,
         minStock: Number(medicineData.minStock) || 0,
         doseAmount: Number(medicineData.doseAmount) || 1,
         dailyDose: Number(medicineData.dailyDose) || 0,
@@ -210,6 +292,7 @@ export const useInventory = (pacienteId) => {
   return {
     medicines,
     loading,
+    isOfflineData,
     updateMedicineStock,
     addMedicine,
     updateMedicine,

@@ -89,8 +89,8 @@ export const styles = StyleSheet.create({
   },
 
   medicineCardExpanded: {
-    backgroundColor: '#2D9CDB',
-    borderColor: '#2D9CDB',
+    backgroundColor: '#42B65A',
+    borderColor: '#42B65A',
   },
 
   medicineCardContent: {

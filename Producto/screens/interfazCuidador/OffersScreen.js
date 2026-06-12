@@ -17,7 +17,7 @@ import { styles } from '../../styles/interfazCuidador/OffersScreen.styles';
 import { getTheme } from '../../theme/theme';
 import { useInventory } from '../../hook/useInventory';
 
-const API_URL = 'http://192.168.100.10:3001/api/prices';
+const API_URL = 'http://192.168.1.100:3001/api/prices';
 
 const OffersScreen = ({
   patientId,
@@ -310,7 +310,7 @@ const OffersScreen = ({
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.myMedicinesButton, { backgroundColor: '#2D9CDB' }]}
+          style={[styles.myMedicinesButton, { backgroundColor: '#42B65A' }]}
           onPress={onGoMyMedicines}
           activeOpacity={0.85}
         >

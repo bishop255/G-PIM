@@ -16,7 +16,7 @@ import { getTheme } from '../../theme/theme';
 import { styles } from '../../styles/interfazCuidador/MyMedicinesOffersScreen.styles';
 import { useInventory } from '../../hook/useInventory';
 
-const API_URL = 'http://192.168.100.10:3001/api/prices';
+const API_URL = 'http://192.168.1.100:3001/api/prices';
 
 const formatPrice = (price) => {
   const value = Number(price || 0);
@@ -189,7 +189,7 @@ const MyMedicinesOffersScreen = ({ patientId, settings, onBack }) => {
           { color: colors.secondaryText, fontSize: fontSizes.subtitle },
         ]}
       >
-        Verás la mejor opción disponible por farmacia.
+        Compara precios y encuentra la opción más económica para tus medicamentos.
       </Text>
 
       <ScrollView
@@ -397,7 +397,7 @@ const MyMedicinesOffersScreen = ({ patientId, settings, onBack }) => {
                                   },
                                 ]}
                               >
-                                Esta es la opción más económica disponible.
+                                Precio más conveniente para este medicamento.
                               </Text>
                             )}
                           </TouchableOpacity>

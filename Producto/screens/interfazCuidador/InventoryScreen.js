@@ -39,7 +39,7 @@ const InventoryScreen = ({
   const [search, setSearch] = useState('');
   const [menuVisible, setMenuVisible] = useState(false);
 
-  const { medicines, loading, deleteMedicine } = useInventory(patientId);
+  const { medicines, loading, deleteMedicine, isOfflineData } = useInventory(patientId);
   const { colors, fontSizes } = getTheme(settings);
 
   const confirmDelete = (id) => {
@@ -299,6 +299,15 @@ const InventoryScreen = ({
             onChangeText={setSearch}
           />
         </View>
+
+        {isOfflineData && (
+        <View style={styles.offlineBanner}>
+          <Ionicons name="cloud-offline-outline" size={20} color="#F39C12" />
+          <Text style={styles.offlineBannerText}>
+            Sin conexión: mostrando inventario guardado.
+          </Text>
+        </View>
+      )}
 
         {loading ? (
           <View style={styles.centerContent}>
