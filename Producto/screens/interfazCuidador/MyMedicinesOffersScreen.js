@@ -15,11 +15,10 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 import { getTheme } from '../../theme/theme';
 
-import { styles } from '../../styles/interfazCuidador/MyMedicinesOffersScreen.styles';
 
 import { useInventory } from '../../hook/useInventory';
 
-const API_URL = 'http://192.168.1.100:3001/api/prices';
+const API_URL = 'http://192.168.100.10:3001/api/prices';
 
 const formatPrice = (price) => {
   const value = Number(price || 0);

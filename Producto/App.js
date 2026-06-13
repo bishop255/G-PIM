@@ -21,6 +21,7 @@ import UserTypeSelectionScreen from './screens/UserTypeSelectionScreen';
 
 import LoginScreen from './screens/Auth/LoginScreen';
 import RegisterScreen from './screens/Auth/RegisterScreen';
+import TermsAndConditionsScreen from './screens/Auth/TermsAndConditionsScreen';
 
 import PatientFormScreen from './screens/interfazAdultoMayor/PatientFormScreen';
 import PatientQRScreen from './screens/interfazAdultoMayor/PatientQRScreen';
@@ -449,10 +450,21 @@ const handleLogout = async () => {
       <LoginScreen
         settings={settings}
         onBack={() => setScreen('select')}
-        onGoRegister={() => setScreen('register')}
+        onGoRegister={() => setScreen('terms')}
         onLogin={handleLogin}
       />
     )
+  }
+
+  // Pantalla de términos y condiciones antes del registro
+  if (screen === 'terms') {
+    return (
+      <TermsAndConditionsScreen
+        settings={settings}
+        onAccept={() => setScreen('register')}
+        onBack={() => setScreen('login')}
+      />
+    );
   }
 
   //Registro de Usuario
