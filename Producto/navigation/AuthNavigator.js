@@ -39,7 +39,7 @@ const AuthNavigator = ({
         {({ navigation }) => (
           <LoginScreen
             settings={settings}
-            onBack={() => navigation.goBack()}
+            onBack={() => navigation.goBack('Select')}
             onGoRegister={() => navigation.navigate('Register')}
             onLogin={onLogin}
           />
@@ -50,7 +50,7 @@ const AuthNavigator = ({
         {({ navigation }) => (
           <RegisterScreen
             settings={settings}
-            onBack={() => navigation.goBack()}
+            onBack={() => navigation.goBack('Login')}
             onGoLogin={() => navigation.navigate('Login')}
             onRegister={onRegister}
           />
