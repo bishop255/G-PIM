@@ -364,7 +364,6 @@ const handleLogin = async ({ email, password }) => {
   try {
     await signInWithEmailAndPassword(auth, email.trim(), password);
 
-    Alert.alert('Bienvenido', 'Inicio de sesión exitoso.');
     // onAuthStateChanged decidirá si va al inventario o registro de paciente
     return true;
   } catch (error) {

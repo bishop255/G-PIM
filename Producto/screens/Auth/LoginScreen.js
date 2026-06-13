@@ -7,18 +7,84 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
+
 import { Ionicons } from '@expo/vector-icons';
 import { getTheme } from '../../theme/theme';
-import {styles} from '../../styles/Auth/LoginScreen.styles';
-import { EmailAuthCredential } from 'firebase/auth/web-extension';
+import { styles } from '../../styles/Auth/LoginScreen.styles';
 
 const LoginScreen = ({ settings, onLogin, onGoRegister, onBack }) => {
   const { colors, fontSizes } = getTheme(settings);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  const inputBackground = colors.isDark ? '#2A2A2A' : '#EFEFEF';
+
+  const clearError = (fieldName) => {
+    if (!errors[fieldName]) return;
+
+    setErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors[fieldName];
+      return newErrors;
+    });
+  };
+
+  const getInputStyle = (fieldName) => [
+    styles.input,
+    {
+      color: colors.text,
+      backgroundColor: inputBackground,
+      fontSize: fontSizes.normal,
+    },
+    errors[fieldName] && styles.inputError,
+  ];
+
+  const handleLoginPress = async () => {
+    if (loading) return;
+
+    const newErrors = {};
+
+    if (!email.trim()) {
+      newErrors.email = 'Ingresa tu correo electrónico.';
+    }
+
+    if (!password.trim()) {
+      newErrors.password = 'Ingresa tu contraseña.';
+    }
+
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      Alert.alert(
+        'Campos incompletos',
+        'Ingresa tu correo y contraseña para continuar.'
+      );
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const success = await onLogin?.({
+        email: email.trim(),
+        password,
+      });
+
+      if (!success) {
+        setLoading(false);
+        return;
+      }
+    } catch (error) {
+      console.error('Error en LoginScreen:', error);
+      setLoading(false);
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -41,7 +107,12 @@ const LoginScreen = ({ settings, onLogin, onGoRegister, onBack }) => {
         Bienvenido
       </Text>
 
-      <Text style={[styles.subtitle, { color: colors.secondaryText, fontSize: fontSizes.subtitle }]}>
+      <Text
+        style={[
+          styles.subtitle,
+          { color: colors.secondaryText, fontSize: fontSizes.subtitle },
+        ]}
+      >
         Inicia sesión como familiar o cuidador
       </Text>
 
@@ -51,61 +122,43 @@ const LoginScreen = ({ settings, onLogin, onGoRegister, onBack }) => {
         </Text>
 
         <TextInput
-          style={[
-            styles.input,
-            {
-              color: colors.text,
-              backgroundColor: colors.isDark ? '#2A2A2A' : '#EFEFEF',
-              fontSize: fontSizes.normal,
-            },
-          ]}
+          style={getInputStyle('email')}
           placeholder="ejemplo@correo.com"
           placeholderTextColor={colors.secondaryText}
           value={email}
-          onChangeText={setEmail}
+          onChangeText={(value) => {
+            setEmail(value);
+            clearError('email');
+          }}
           autoCapitalize="none"
           keyboardType="email-address"
         />
+        {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
 
         <Text style={[styles.label, { color: colors.text, fontSize: fontSizes.normal }]}>
           Contraseña
         </Text>
 
         <TextInput
-          style={[
-            styles.input,
-            {
-              color: colors.text,
-              backgroundColor: colors.isDark ? '#2A2A2A' : '#EFEFEF',
-              fontSize: fontSizes.normal,
-            },
-          ]}
+          style={getInputStyle('password')}
           placeholder="Ingresa tu contraseña"
           placeholderTextColor={colors.secondaryText}
           value={password}
-          onChangeText={setPassword}
+          onChangeText={(value) => {
+            setPassword(value);
+            clearError('password');
+          }}
           secureTextEntry
         />
+        {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
 
-        <TouchableOpacity style={[
-            styles.loginButton, loading && {opacity: 0.6},
-            ]} 
-            onPress={async () => {
-                if (loading) return;
-
-                setLoading(true);
-
-                const success = await onLogin?. ({
-                    email,
-                    password,
-                })
-
-                setLoading(false);
-            }}
-            disabled={loading}  
-            >
+        <TouchableOpacity
+          style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+          onPress={handleLoginPress}
+          disabled={loading}
+        >
           <Text style={[styles.loginText, { fontSize: fontSizes.button }]}>
-            Iniciar sesión
+            {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
           </Text>
         </TouchableOpacity>
 

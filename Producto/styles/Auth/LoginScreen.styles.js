@@ -66,4 +66,22 @@ export const styles = StyleSheet.create({
     color: '#42B65A',
     fontWeight: '800',
   },
+
+  inputError: {
+  borderWidth: 2,
+  borderColor: '#E74C3C',
+  backgroundColor: '#FDECEC',
+},
+
+errorText: {
+  color: '#E74C3C',
+  fontSize: 13,
+  fontWeight: '800',
+  marginTop: 6,
+  marginBottom: 4,
+},
+
+loginButtonDisabled: {
+  opacity: 0.6,
+},
 });
