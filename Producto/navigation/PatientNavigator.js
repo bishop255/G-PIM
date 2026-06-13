@@ -1,7 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Alert } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import {
+  doc,
+  onSnapshot,
+} from 'firebase/firestore';
+
+import { db } from '../database/firebaseConfig';
 
 import PatientWaitingLinkScreen from '../screens/interfazAdultoMayor/PatientWaitingLinkScreen';
 import HomeScreen from '../screens/interfazAdultoMayor/HomeScreen';
@@ -23,6 +30,49 @@ const PatientNavigator = ({
   initialRouteName = 'PatientWaitingLink',
   onGoSelect,
 }) => {
+  useEffect(() => {
+    if (!patientId) return;
+
+    const patientRef = doc(db, 'pacientes', patientId);
+
+    const unsubscribe = onSnapshot(patientRef, async (snapshot) => {
+      if (!snapshot.exists()) {
+        await AsyncStorage.removeItem('adultPatientId');
+
+        setPatientId(null);
+        setAdultPatientData(null);
+        onGoSelect();
+        return;
+      }
+
+      const patientData = snapshot.data();
+
+      const cuidadores = Array.isArray(patientData.cuidadores)
+        ? patientData.cuidadores
+        : [];
+
+      const isUnlinked =
+        patientData.estadoVinculacion === 'desvinculado' ||
+        cuidadores.length === 0;
+
+      if (isUnlinked) {
+        await AsyncStorage.removeItem('adultPatientId');
+
+        setPatientId(null);
+        setAdultPatientData(null);
+
+        Alert.alert(
+          'Paciente desvinculado',
+          'La conexión con el cuidador fue finalizada.'
+        );
+
+        onGoSelect();
+      }
+    });
+
+    return unsubscribe;
+  }, [patientId]);
+
   return (
     <Stack.Navigator
       initialRouteName={initialRouteName}

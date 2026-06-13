@@ -184,50 +184,6 @@ useEffect(() => {
   return unsubscribe;
 }, []);
 
-  useEffect(() => {
-    const isAdultPatientFlow =
-      screen === 'adultoMayorHome' ||
-      screen === 'takeMedicine' ||
-      screen === 'adultoMayorEmergency';
-
-    if (!patientId || !isAdultPatientFlow) return;
-
-    const linkQuery = query(
-      collection(db, 'patientLinkRequests'),
-      where('patientId', '==', patientId)
-    );
-
-    const unsubscribe = onSnapshot(linkQuery, async (snapshot) => {
-      const requests = snapshot.docs.map((docItem) => ({
-        id: docItem.id,
-        ...docItem.data(),
-      }));
-
-      const hasActiveLink = requests.some(
-        (item) => item.estado === 'vinculado'
-      );
-
-      const hasUnlinkedRequest = requests.some(
-        (item) => item.estado === 'desvinculado'
-      );
-
-      if (!hasActiveLink && hasUnlinkedRequest) {
-        await AsyncStorage.removeItem('adultPatientId');
-
-        setPatientId(null);
-        setAdultPatientData(null);
-
-        Alert.alert(
-          'Paciente desvinculado',
-          'La conexión con el cuidador fue finalizada.'
-        );
-
-        setScreen('patientWaitingLink');
-      }
-    });
-
-    return unsubscribe;
-  }, [patientId, screen]);
 
 useEffect(() => {
   const isAdultPatientFlow =
@@ -488,11 +444,6 @@ const handleLogout = async () => {
       </NavigationContainer>
     );
   }
-
-
-
-
-
 
   return null;
 }
