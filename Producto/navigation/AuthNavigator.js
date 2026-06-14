@@ -15,6 +15,7 @@ const AuthNavigator = ({
   onRegister,
   onPatientSaved,
   onGoAdultPatient,
+  onResetPassword,
 }) => {
   return (
     <Stack.Navigator
@@ -42,6 +43,7 @@ const AuthNavigator = ({
             onBack={() => navigation.replace('Select')}
             onGoRegister={() => navigation.navigate('Register')}
             onLogin={onLogin}
+            onResetPassword={onResetPassword}
           />
         )}
       </Stack.Screen>

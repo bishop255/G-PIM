@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Alert } from 'react-native';
+
+
 import { auth, db } from './database/firebaseConfig';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { doc, setDoc, getDoc, collection, query, where, onSnapshot ,serverTimestamp } from 'firebase/firestore';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
+
+
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -356,6 +360,49 @@ const handleLogout = async () => {
   
 }
 
+const handleResetPassword = async (email) => {
+  if (!email.trim()) {
+    Alert.alert(
+      'Correo requerido',
+      'Ingresa tu correo electrónico para recuperar tu contraseña.'
+    );
+    return false;
+  }
+
+  try {
+    await sendPasswordResetEmail(auth, email.trim());
+
+    Alert.alert(
+      'Correo enviado',
+      'Te enviamos un enlace para restablecer tu contraseña. Revisa tu bandeja de entrada o spam.'
+    );
+
+    return true;
+  } catch (error) {
+    console.error('Error enviando recuperación:', error);
+
+    if (error.code === 'auth/invalid-email') {
+      Alert.alert('Correo inválido', 'Ingresa un correo válido.');
+      return false;
+    }
+
+    if (error.code === 'auth/user-not-found') {
+      Alert.alert(
+        'Correo no registrado',
+        'No existe una cuenta asociada a este correo.'
+      );
+      return false;
+    }
+
+    Alert.alert(
+      'Error',
+      'No se pudo enviar el correo de recuperación.'
+    );
+
+    return false;
+  }
+};
+
   // Splash de carga
   
   if (screen === 'splash') return <SplashScreen />;
@@ -384,6 +431,7 @@ const handleLogout = async () => {
           }
           onLogin={handleLogin}
           onRegister={handleRegister}
+          onResetPassword={handleResetPassword}
           onPatientSaved={(newPatientId) => {
             setPatientId(newPatientId);
             setScreen('inventory');
