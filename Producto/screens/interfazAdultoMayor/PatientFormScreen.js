@@ -97,6 +97,9 @@ const PatientFormScreen = ({ onSaved, onCancel }) => {
         if (Platform.OS === 'android') {
             setShowDatePicker(false);
         }
+        if (event?.type === 'dismissed') {
+        return;
+        }
 
         if (selectedDate) {
             setFechaNacimiento(selectedDate);
@@ -266,7 +269,7 @@ const PatientFormScreen = ({ onSaved, onCancel }) => {
                             value={fechaNacimiento || new Date(1950, 0, 1)}
                             mode="date"
                             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                            maximumDate={new Date()}
+                            minimumDate={new Date(1900, 0, 1)}
                             onChange={handleDateChange}
                         />
                     )}

@@ -263,7 +263,7 @@ useEffect(() => {
 const handleRegister = async ({ name, email, phone, password, relationship }) => {
   if (!name.trim() || !email.trim() || !phone.trim() || !password.trim()) {
     Alert.alert('Campos incompletos', 'Completa todos los campos.');
-    return;
+    return false;
   }
 
   if (password.length < 6) {
@@ -271,7 +271,7 @@ const handleRegister = async ({ name, email, phone, password, relationship }) =>
       'Contraseña inválida',
       'La contraseña debe tener al menos 6 caracteres.'
     );
-    return;
+    return false;
   }
 
   try {
@@ -296,7 +296,7 @@ const handleRegister = async ({ name, email, phone, password, relationship }) =>
     });
 
     Alert.alert('Cuenta creada', 'Usuario registrado correctamente.');
-    setScreen('patientForm');
+
     return true;
   } catch (error) {
     console.error('Error registrando usuario:', error);
@@ -312,6 +312,7 @@ const handleRegister = async ({ name, email, phone, password, relationship }) =>
     }
 
     Alert.alert('Error', 'No se pudo crear el usuario.');
+    return false;
   }
 };
 

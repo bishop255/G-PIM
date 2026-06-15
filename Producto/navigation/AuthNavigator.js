@@ -54,7 +54,15 @@ const AuthNavigator = ({
             settings={settings}
             onBack={() => navigation.replace('Login')}
             onGoLogin={() => navigation.replace('Login')}
-            onRegister={onRegister}
+            onRegister={async (formData) => {
+              const registered = await onRegister(formData);
+
+              if (registered) {
+                navigation.replace('PatientForm');
+              }
+
+              return registered;
+            }}
           />
         )}
       </Stack.Screen>
