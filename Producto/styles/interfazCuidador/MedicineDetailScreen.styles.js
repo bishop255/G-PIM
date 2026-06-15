@@ -2,10 +2,11 @@ import { StyleSheet } from 'react-native';
 
 
 export const styles = StyleSheet.create({
+
   container: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 55,
+    paddingTop: 20,
   },
   scrollContent: {
     paddingBottom: 120,
@@ -269,4 +270,121 @@ export const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '800',
   },
+
+  safeContainer: {
+  flex: 1,
+},
+
+aiCard: {
+  borderRadius: 24,
+  padding: 18,
+  marginTop: 18,
+  borderWidth: 1,
+  elevation: 3,
+},
+
+aiHeader: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginBottom: 14,
+},
+
+aiIconBox: {
+  width: 44,
+  height: 44,
+  borderRadius: 16,
+  backgroundColor: '#42B65A',
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginRight: 12,
+},
+
+aiHeaderText: {
+  flex: 1,
+},
+
+aiTitle: {
+  fontWeight: '900',
+},
+
+aiSubtitle: {
+  marginTop: 3,
+  fontWeight: '700',
+},
+
+aiLoadingBox: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: '#EAF8EE',
+  borderRadius: 16,
+  padding: 14,
+},
+
+aiLoadingText: {
+  marginLeft: 10,
+  fontWeight: '800',
+},
+
+aiSummary: {
+  fontWeight: '700',
+  lineHeight: 22,
+  marginBottom: 12,
+},
+
+aiSection: {
+  marginTop: 12,
+},
+
+aiSectionTitle: {
+  fontSize: 15,
+  fontWeight: '900',
+  marginBottom: 8,
+},
+
+aiItemRow: {
+  flexDirection: 'row',
+  alignItems: 'flex-start',
+  marginBottom: 8,
+},
+
+aiItemText: {
+  flex: 1,
+  marginLeft: 8,
+  fontSize: 14,
+  fontWeight: '700',
+  lineHeight: 20,
+},
+
+aiDisclaimerBox: {
+  marginTop: 14,
+  backgroundColor: '#FDECEC',
+  borderRadius: 16,
+  padding: 13,
+  flexDirection: 'row',
+  alignItems: 'flex-start',
+},
+
+aiDisclaimerText: {
+  flex: 1,
+  marginLeft: 8,
+  color: '#E74C3C',
+  fontSize: 13,
+  fontWeight: '800',
+  lineHeight: 19,
+},
+
+aiErrorBox: {
+  backgroundColor: '#FDECEC',
+  borderRadius: 16,
+  padding: 14,
+  flexDirection: 'row',
+  alignItems: 'center',
+},
+
+aiErrorText: {
+  flex: 1,
+  marginLeft: 8,
+  color: '#E74C3C',
+  fontWeight: '800',
+},
 });
