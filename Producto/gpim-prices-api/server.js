@@ -12,7 +12,7 @@ const openai = new OpenAI({
 });
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
@@ -254,6 +254,10 @@ const scrapeSalcobrand = async (query) => {
   try {
     browser = await puppeteer.launch({
       headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+      ],
     });
 
     const page = await browser.newPage();
