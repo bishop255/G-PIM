@@ -8,12 +8,19 @@ import {
   ScrollView,
   Modal,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
+
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 import { Ionicons } from '@expo/vector-icons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+
+import { db } from '../../database/firebaseConfig';
 import { getTheme } from '../../theme/theme';
 import { useInventory } from '../../hook/useInventory';
+import { getMedicineAIInfo } from '../../services/medicineAIService';
 import { styles } from '../../styles/interfazCuidador/MedicineDetailScreen.styles';
 
 const MedicineDetailScreen = ({ settings, medicine, onBack, onEdit, patientId }) => {
@@ -23,6 +30,10 @@ const MedicineDetailScreen = ({ settings, medicine, onBack, onEdit, patientId })
   const [modalVisible, setModalVisible] = useState(false);
   const [amount, setAmount] = useState('');
   const [loadingAction, setLoadingAction] = useState(false);
+
+  const [aiInfo, setAiInfo] = useState(medicine.aiInfo || null);
+  const [loadingAiInfo, setLoadingAiInfo] = useState(false);
+  const [aiError, setAiError] = useState('');
 
   const inputBackground = colors.isDark ? '#2A2A2A' : '#EFEFEF';
 
@@ -64,18 +75,14 @@ const MedicineDetailScreen = ({ settings, medicine, onBack, onEdit, patientId })
       case 'Tableta / Cápsula':
       case 'Tableta':
         return 'pill';
-
       case 'Jarabe / Gotas':
       case 'Jarabe':
         return 'bottle-tonic-plus';
-
       case 'Inyección':
         return 'needle';
-
       case 'Insumo médico':
       case 'Otro':
         return 'medical-bag';
-
       default:
         return 'pill';
     }
@@ -152,6 +159,47 @@ const MedicineDetailScreen = ({ settings, medicine, onBack, onEdit, patientId })
   const progressAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    const loadAIInfo = async () => {
+      if (!patientId || !medicine?.id || !medicine?.name) return;
+
+      if (medicine.aiInfo) {
+        setAiInfo(medicine.aiInfo);
+        return;
+      }
+
+      try {
+        setLoadingAiInfo(true);
+        setAiError('');
+
+        const generatedInfo = await getMedicineAIInfo(medicine.name);
+
+        setAiInfo(generatedInfo);
+
+        const medicineRef = doc(
+          db,
+          'pacientes',
+          patientId,
+          'inventario',
+          medicine.id
+        );
+
+        await updateDoc(medicineRef, {
+          aiInfo: generatedInfo,
+          aiInfoGeneratedAt: serverTimestamp(),
+          aiInfoSource: 'openai',
+        });
+      } catch (error) {
+        console.error('Error cargando información IA:', error);
+        setAiError('No se pudo cargar la información inteligente.');
+      } finally {
+        setLoadingAiInfo(false);
+      }
+    };
+
+    loadAIInfo();
+  }, [patientId, medicine?.id]);
+
+  useEffect(() => {
     Animated.timing(progressAnim, {
       toValue: stockPercentage,
       duration: 700,
@@ -202,366 +250,489 @@ const MedicineDetailScreen = ({ settings, medicine, onBack, onEdit, patientId })
   };
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={styles.scrollContent}
-      showsVerticalScrollIndicator={false}
+    <SafeAreaView
+      style={[styles.safeContainer, { backgroundColor: colors.background }]}
+      edges={['top', 'left', 'right', 'bottom']}
     >
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={onBack}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-
-        <Text
-          style={[
-            styles.title,
-            { color: colors.text, fontSize: fontSizes.header },
-          ]}
-        >
-          {medicine.name}
-        </Text>
-
-        <TouchableOpacity onPress={onEdit}>
-          <Ionicons name="create-outline" size={24} color={colors.text} />
-        </TouchableOpacity>
-      </View>
-
-      <View
-        style={[
-          styles.mainCard,
-          { backgroundColor: colors.card, borderColor: colors.border },
-        ]}
+      <ScrollView
+        style={[styles.container, { backgroundColor: colors.background }]}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.iconCircle, { borderColor: status.color }]}>
-          <MaterialCommunityIcons
-            name={getCategoryIcon()}
-            size={88}
-            color={status.color}
-          />
-        </View>
+        <View style={styles.topBar}>
+          <TouchableOpacity onPress={onBack}>
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          </TouchableOpacity>
 
-        <View style={[styles.statusBadge, { backgroundColor: status.background }]}>
           <Text
             style={[
-              styles.statusText,
-              { color: status.color, fontSize: fontSizes.normal },
+              styles.title,
+              { color: colors.text, fontSize: fontSizes.header },
             ]}
           >
-            {status.label}
+            {medicine.name}
           </Text>
+
+          <TouchableOpacity onPress={onEdit}>
+            <Ionicons name="create-outline" size={24} color={colors.text} />
+          </TouchableOpacity>
         </View>
 
-        <Text
+        <View
           style={[
-            styles.remainingText,
-            { color: colors.text, fontSize: fontSizes.header - 2 },
+            styles.mainCard,
+            { backgroundColor: colors.card, borderColor: colors.border },
           ]}
         >
-          {remainingDays === null
-            ? 'Consumo diario no definido'
-            : remainingDays === 1
-            ? 'Se acaba en 1 día'
-            : `Se acaba en ${remainingDays} días`}
-        </Text>
-
-        <View style={styles.progressContainer}>
-          <View style={styles.progressHeader}>
-            <Text
-              style={[
-                styles.progressLabel,
-                { color: colors.secondaryText, fontSize: fontSizes.normal },
-              ]}
-            >
-              Nivel de seguridad del stock
-            </Text>
-
-            <View style={[styles.levelBadge, { backgroundColor: stockLevel.color }]}>
-              <Text style={styles.levelBadgeText}>{stockLevel.label}</Text>
-            </View>
-          </View>
-
-          <View style={styles.progressBarBackground}>
-            <Animated.View
-              style={[
-                styles.progressBarFill,
-                {
-                  width: animatedWidth,
-                  backgroundColor: stockLevel.color,
-                },
-              ]}
+          <View style={[styles.iconCircle, { borderColor: status.color }]}>
+            <MaterialCommunityIcons
+              name={getCategoryIcon()}
+              size={88}
+              color={status.color}
             />
           </View>
 
+          <View style={[styles.statusBadge, { backgroundColor: status.background }]}>
+            <Text
+              style={[
+                styles.statusText,
+                { color: status.color, fontSize: fontSizes.normal },
+              ]}
+            >
+              {status.label}
+            </Text>
+          </View>
+
           <Text
             style={[
-              styles.progressPercent,
-              { color: stockLevel.color, fontSize: fontSizes.normal },
+              styles.remainingText,
+              { color: colors.text, fontSize: fontSizes.header - 2 },
             ]}
           >
-            {Math.round(stockPercentage)}%
+            {remainingDays === null
+              ? 'Consumo diario no definido'
+              : remainingDays === 1
+              ? 'Se acaba en 1 día'
+              : `Se acaba en ${remainingDays} días`}
           </Text>
-        </View>
 
-        <View style={[styles.alertBox, { backgroundColor: status.background }]}>
-          <Ionicons
-            name="information-circle-outline"
-            size={20}
-            color={stockLevel.color}
-          />
+          <View style={styles.progressContainer}>
+            <View style={styles.progressHeader}>
+              <Text
+                style={[
+                  styles.progressLabel,
+                  { color: colors.secondaryText, fontSize: fontSizes.normal },
+                ]}
+              >
+                Nivel de seguridad del stock
+              </Text>
+
+              <View style={[styles.levelBadge, { backgroundColor: stockLevel.color }]}>
+                <Text style={styles.levelBadgeText}>{stockLevel.label}</Text>
+              </View>
+            </View>
+
+            <View style={styles.progressBarBackground}>
+              <Animated.View
+                style={[
+                  styles.progressBarFill,
+                  {
+                    width: animatedWidth,
+                    backgroundColor: stockLevel.color,
+                  },
+                ]}
+              />
+            </View>
+
+            <Text
+              style={[
+                styles.progressPercent,
+                { color: stockLevel.color, fontSize: fontSizes.normal },
+              ]}
+            >
+              {Math.round(stockPercentage)}%
+            </Text>
+          </View>
+
+          <View style={[styles.alertBox, { backgroundColor: status.background }]}>
+            <Ionicons
+              name="information-circle-outline"
+              size={20}
+              color={stockLevel.color}
+            />
+            <Text
+              style={[
+                styles.alertText,
+                { color: stockLevel.color, fontSize: fontSizes.normal },
+              ]}
+            >
+              {stockLevel.message}
+            </Text>
+          </View>
+
+          {getEstimatedDate() && (
+            <Text
+              style={[
+                styles.estimatedDate,
+                { color: colors.secondaryText, fontSize: fontSizes.small },
+              ]}
+            >
+              Fecha estimada de agotamiento: {getEstimatedDate()}
+            </Text>
+          )}
+
           <Text
             style={[
-              styles.alertText,
-              { color: stockLevel.color, fontSize: fontSizes.normal },
-            ]}
-          >
-            {stockLevel.message}
-          </Text>
-        </View>
-
-        {getEstimatedDate() && (
-          <Text
-            style={[
-              styles.estimatedDate,
+              styles.categoryText,
               { color: colors.secondaryText, fontSize: fontSizes.small },
             ]}
           >
-            Fecha estimada de agotamiento: {getEstimatedDate()}
+            Categoría: {medicine.category || 'No definida'}
           </Text>
-        )}
 
-        <Text
-          style={[
-            styles.categoryText,
-            { color: colors.secondaryText, fontSize: fontSizes.small },
-          ]}
-        >
-          Categoría: {medicine.category || 'No definida'}
-        </Text>
+          <View style={styles.stockRow}>
+            <View style={[styles.stockBox, { backgroundColor: colors.background }]}>
+              <Text
+                style={[
+                  styles.stockNumber,
+                  { color: colors.text, fontSize: fontSizes.header },
+                ]}
+              >
+                {medicine.currentStock ?? 0}
+              </Text>
+              <Text
+                style={[
+                  styles.stockLabel,
+                  { color: colors.secondaryText, fontSize: fontSizes.small },
+                ]}
+              >
+                Stock actual ({stockUnit})
+              </Text>
+            </View>
 
-        <View style={styles.stockRow}>
-          <View style={[styles.stockBox, { backgroundColor: colors.background }]}>
-            <Text
-              style={[
-                styles.stockNumber,
-                { color: colors.text, fontSize: fontSizes.header },
-              ]}
-            >
-              {medicine.currentStock ?? 0}
-            </Text>
-            <Text
-              style={[
-                styles.stockLabel,
-                { color: colors.secondaryText, fontSize: fontSizes.small },
-              ]}
-            >
-              Stock actual ({stockUnit})
-            </Text>
-          </View>
+            <View style={[styles.stockBox, { backgroundColor: colors.background }]}>
+              <Text
+                style={[
+                  styles.stockNumber,
+                  { color: colors.text, fontSize: fontSizes.header },
+                ]}
+              >
+                {medicine.minStock ?? 0}
+              </Text>
+              <Text
+                style={[
+                  styles.stockLabel,
+                  { color: colors.secondaryText, fontSize: fontSizes.small },
+                ]}
+              >
+                Stock mínimo ({stockUnit})
+              </Text>
+            </View>
 
-          <View style={[styles.stockBox, { backgroundColor: colors.background }]}>
-            <Text
-              style={[
-                styles.stockNumber,
-                { color: colors.text, fontSize: fontSizes.header },
-              ]}
-            >
-              {medicine.minStock ?? 0}
-            </Text>
-            <Text
-              style={[
-                styles.stockLabel,
-                { color: colors.secondaryText, fontSize: fontSizes.small },
-              ]}
-            >
-              Stock mínimo ({stockUnit})
-            </Text>
-          </View>
-
-          <View style={[styles.stockBox, { backgroundColor: colors.background }]}>
-            <Text
-              style={[
-                styles.stockNumber,
-                { color: colors.text, fontSize: fontSizes.header },
-              ]}
-            >
-              {dailyDose}
-            </Text>
-            <Text
-              style={[
-                styles.stockLabel,
-                { color: colors.secondaryText, fontSize: fontSizes.small },
-              ]}
-            >
-              Tomas diarias
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.infoGrid}>
-          <View style={[styles.infoBox, { backgroundColor: colors.background }]}>
-            <Ionicons name="medkit-outline" size={22} color={colors.text} />
-            <Text style={[styles.infoLabel, { color: colors.secondaryText }]}>
-              Cantidad por toma
-            </Text>
-            <Text style={[styles.infoValue, { color: colors.text }]}>
-              {doseAmount} {stockUnit}
-            </Text>
-          </View>
-
-          <View style={[styles.infoBox, { backgroundColor: colors.background }]}>
-            <Ionicons name="calculator-outline" size={22} color={colors.text} />
-            <Text style={[styles.infoLabel, { color: colors.secondaryText }]}>
-              Consumo diario
-            </Text>
-            <Text style={[styles.infoValue, { color: colors.text }]}>
-              {dailyConsumption || 0} {stockUnit}
-            </Text>
-          </View>
-        </View>
-
-        {Array.isArray(medicine.schedules) && medicine.schedules.length > 0 && (
-          <View style={styles.scheduleSection}>
-            <Text
-              style={[
-                styles.sectionTitle,
-                { color: colors.text, fontSize: fontSizes.normal },
-              ]}
-            >
-              Horarios de toma
-            </Text>
-
-            <View style={styles.scheduleList}>
-              {medicine.schedules.map((schedule, index) => (
-                <View
-                  key={index}
-                  style={[
-                    styles.schedulePill,
-                    { backgroundColor: colors.background },
-                  ]}
-                >
-                  <Ionicons name="time-outline" size={18} color={colors.text} />
-                  <Text style={[styles.scheduleText, { color: colors.text }]}>
-                    {formatSchedule(schedule)}
-                  </Text>
-                </View>
-              ))}
+            <View style={[styles.stockBox, { backgroundColor: colors.background }]}>
+              <Text
+                style={[
+                  styles.stockNumber,
+                  { color: colors.text, fontSize: fontSizes.header },
+                ]}
+              >
+                {dailyDose}
+              </Text>
+              <Text
+                style={[
+                  styles.stockLabel,
+                  { color: colors.secondaryText, fontSize: fontSizes.small },
+                ]}
+              >
+                Tomas diarias
+              </Text>
             </View>
           </View>
-        )}
-      </View>
 
-      <View style={styles.actions}>
-        <TouchableOpacity
-          style={styles.restockButton}
-          onPress={() => setModalVisible(true)}
-        >
-          <Ionicons name="add-circle-outline" size={22} color="#FFFFFF" />
-          <Text style={[styles.primaryButtonText, { fontSize: fontSizes.button }]}>
-            Reponer stock
-          </Text>
-        </TouchableOpacity>
+          <View style={styles.infoGrid}>
+            <View style={[styles.infoBox, { backgroundColor: colors.background }]}>
+              <Ionicons name="medkit-outline" size={22} color={colors.text} />
+              <Text style={[styles.infoLabel, { color: colors.secondaryText }]}>
+                Cantidad por toma
+              </Text>
+              <Text style={[styles.infoValue, { color: colors.text }]}>
+                {doseAmount} {stockUnit}
+              </Text>
+            </View>
 
-        <TouchableOpacity
+            <View style={[styles.infoBox, { backgroundColor: colors.background }]}>
+              <Ionicons name="calculator-outline" size={22} color={colors.text} />
+              <Text style={[styles.infoLabel, { color: colors.secondaryText }]}>
+                Consumo diario
+              </Text>
+              <Text style={[styles.infoValue, { color: colors.text }]}>
+                {dailyConsumption || 0} {stockUnit}
+              </Text>
+            </View>
+          </View>
+
+          {Array.isArray(medicine.schedules) && medicine.schedules.length > 0 && (
+            <View style={styles.scheduleSection}>
+              <Text
+                style={[
+                  styles.sectionTitle,
+                  { color: colors.text, fontSize: fontSizes.normal },
+                ]}
+              >
+                Horarios de toma
+              </Text>
+
+              <View style={styles.scheduleList}>
+                {medicine.schedules.map((schedule, index) => (
+                  <View
+                    key={index}
+                    style={[
+                      styles.schedulePill,
+                      { backgroundColor: colors.background },
+                    ]}
+                  >
+                    <Ionicons name="time-outline" size={18} color={colors.text} />
+                    <Text style={[styles.scheduleText, { color: colors.text }]}>
+                      {formatSchedule(schedule)}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+        </View>
+
+        <View
           style={[
-            styles.editButton,
+            styles.aiCard,
             { backgroundColor: colors.card, borderColor: colors.border },
           ]}
-          onPress={onEdit}
         >
-          <Ionicons name="create-outline" size={22} color={colors.text} />
-          <Text
-            style={[
-              styles.secondaryButtonText,
-              { color: colors.text, fontSize: fontSizes.button },
-            ]}
-          >
-            Editar medicamento
-          </Text>
-        </TouchableOpacity>
+          <View style={styles.aiHeader}>
+            <View style={styles.aiIconBox}>
+              <Ionicons name="sparkles-outline" size={24} color="#FFFFFF" />
+            </View>
 
-        <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-          <Ionicons name="trash-outline" size={22} color="#FFFFFF" />
-          <Text style={[styles.primaryButtonText, { fontSize: fontSizes.button }]}>
-            Eliminar medicamento
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <Modal visible={modalVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View
-            style={[
-              styles.modalContainer,
-              { backgroundColor: colors.card, borderColor: colors.border },
-            ]}
-          >
-            <Text
-              style={[
-                styles.modalTitle,
-                { color: colors.text, fontSize: fontSizes.header },
-              ]}
-            >
-              Reponer stock
-            </Text>
-
-            <Text
-              style={[
-                styles.modalSubtitle,
-                { color: colors.secondaryText, fontSize: fontSizes.normal },
-              ]}
-            >
-              Ingresa la cantidad a agregar en {stockUnit}.
-            </Text>
-
-            <TextInput
-              placeholder={`Cantidad a agregar (${stockUnit})`}
-              placeholderTextColor={colors.secondaryText}
-              keyboardType="decimal-pad"
-              value={amount}
-              onChangeText={setAmount}
-              style={[
-                styles.input,
-                {
-                  backgroundColor: inputBackground,
-                  color: colors.text,
-                  borderColor: colors.border,
-                  fontSize: fontSizes.normal,
-                },
-              ]}
-            />
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => setModalVisible(false)}
-              >
-                <Text
-                  style={[
-                    styles.cancelText,
-                    { color: colors.secondaryText, fontSize: fontSizes.normal },
-                  ]}
-                >
-                  Cancelar
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
+            <View style={styles.aiHeaderText}>
+              <Text
                 style={[
-                  styles.confirmButton,
-                  loadingAction && { opacity: 0.6 },
+                  styles.aiTitle,
+                  { color: colors.text, fontSize: fontSizes.normal + 2 },
                 ]}
-                onPress={handleReplenish}
-                disabled={loadingAction}
               >
-                <Text style={[styles.confirmText, { fontSize: fontSizes.normal }]}>
-                  {loadingAction ? 'Agregando...' : 'Agregar'}
-                </Text>
-              </TouchableOpacity>
+                Información inteligente
+              </Text>
+
+              <Text
+                style={[
+                  styles.aiSubtitle,
+                  { color: colors.secondaryText, fontSize: fontSizes.small },
+                ]}
+              >
+                Generada una vez y guardada para evitar consultas repetidas.
+              </Text>
             </View>
           </View>
+
+          {loadingAiInfo ? (
+            <View style={styles.aiLoadingBox}>
+              <ActivityIndicator size="small" color="#42B65A" />
+              <Text
+                style={[
+                  styles.aiLoadingText,
+                  { color: colors.secondaryText, fontSize: fontSizes.normal },
+                ]}
+              >
+                Generando información del medicamento...
+              </Text>
+            </View>
+          ) : aiInfo ? (
+            <>
+              <Text
+                style={[
+                  styles.aiSummary,
+                  { color: colors.text, fontSize: fontSizes.normal },
+                ]}
+              >
+                {aiInfo.summary}
+              </Text>
+
+              <AIList
+                title="Usos comunes"
+                items={aiInfo.uses}
+                icon="checkmark-circle-outline"
+                color="#42B65A"
+                colors={colors}
+              />
+
+              <AIList
+                title="Precauciones"
+                items={aiInfo.precautions}
+                icon="warning-outline"
+                color="#F39C12"
+                colors={colors}
+              />
+
+              <AIList
+                title="Recomendaciones"
+                items={aiInfo.recommendations}
+                icon="bulb-outline"
+                color="#2D9CDB"
+                colors={colors}
+              />
+
+              <View style={styles.aiDisclaimerBox}>
+                <Ionicons name="medical-outline" size={18} color="#E74C3C" />
+                <Text style={styles.aiDisclaimerText}>
+                  {aiInfo.disclaimer ||
+                    'Esta información es general y no reemplaza la indicación de un profesional de la salud.'}
+                </Text>
+              </View>
+            </>
+          ) : (
+            <View style={styles.aiErrorBox}>
+              <Ionicons name="alert-circle-outline" size={22} color="#E74C3C" />
+              <Text style={styles.aiErrorText}>
+                {aiError || 'Información no disponible por ahora.'}
+              </Text>
+            </View>
+          )}
         </View>
-      </Modal>
-    </ScrollView>
+
+        <View style={styles.actions}>
+          <TouchableOpacity
+            style={styles.restockButton}
+            onPress={() => setModalVisible(true)}
+          >
+            <Ionicons name="add-circle-outline" size={22} color="#FFFFFF" />
+            <Text style={[styles.primaryButtonText, { fontSize: fontSizes.button }]}>
+              Reponer stock
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.editButton,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+            onPress={onEdit}
+          >
+            <Ionicons name="create-outline" size={22} color={colors.text} />
+            <Text
+              style={[
+                styles.secondaryButtonText,
+                { color: colors.text, fontSize: fontSizes.button },
+              ]}
+            >
+              Editar medicamento
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
+            <Ionicons name="trash-outline" size={22} color="#FFFFFF" />
+            <Text style={[styles.primaryButtonText, { fontSize: fontSizes.button }]}>
+              Eliminar medicamento
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <Modal visible={modalVisible} transparent animationType="fade">
+          <View style={styles.modalOverlay}>
+            <View
+              style={[
+                styles.modalContainer,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.modalTitle,
+                  { color: colors.text, fontSize: fontSizes.header },
+                ]}
+              >
+                Reponer stock
+              </Text>
+
+              <Text
+                style={[
+                  styles.modalSubtitle,
+                  { color: colors.secondaryText, fontSize: fontSizes.normal },
+                ]}
+              >
+                Ingresa la cantidad a agregar en {stockUnit}.
+              </Text>
+
+              <TextInput
+                placeholder={`Cantidad a agregar (${stockUnit})`}
+                placeholderTextColor={colors.secondaryText}
+                keyboardType="decimal-pad"
+                value={amount}
+                onChangeText={setAmount}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: inputBackground,
+                    color: colors.text,
+                    borderColor: colors.border,
+                    fontSize: fontSizes.normal,
+                  },
+                ]}
+              />
+
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Text
+                    style={[
+                      styles.cancelText,
+                      { color: colors.secondaryText, fontSize: fontSizes.normal },
+                    ]}
+                  >
+                    Cancelar
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.confirmButton,
+                    loadingAction && { opacity: 0.6 },
+                  ]}
+                  onPress={handleReplenish}
+                  disabled={loadingAction}
+                >
+                  <Text style={[styles.confirmText, { fontSize: fontSizes.normal }]}>
+                    {loadingAction ? 'Agregando...' : 'Agregar'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
+
+const AIList = ({ title, items = [], icon, color, colors }) => {
+  if (!Array.isArray(items) || items.length === 0) return null;
+
+  return (
+    <View style={styles.aiSection}>
+      <Text style={[styles.aiSectionTitle, { color: colors.text }]}>
+        {title}
+      </Text>
+
+      {items.map((item, index) => (
+        <View key={`${title}-${index}`} style={styles.aiItemRow}>
+          <Ionicons name={icon} size={18} color={color} />
+          <Text style={[styles.aiItemText, { color: colors.secondaryText }]}>
+            {item}
+          </Text>
+        </View>
+      ))}
+    </View>
   );
 };
 
