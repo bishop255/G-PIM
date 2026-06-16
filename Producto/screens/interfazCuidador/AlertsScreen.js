@@ -198,6 +198,25 @@ const AlertsScreen = ({
         };
       }
 
+      if (item.type === 'patient_low_stock') {
+        return {
+          id: `event-${item.id}`,
+          rawId: item.id,
+          type: 'event',
+          eventType: 'patient_low_stock',
+          title: 'Stock crítico reportado',
+          medicineName: item.medicineName || 'Medicamento',
+          message:
+            item.message ||
+            `El paciente indicó que ${item.medicineName || 'un medicamento'} está por agotarse.`,
+          detail: `Reporte del paciente · ${formatDateTime(item.createdAt)}`,
+          color: '#F39C12',
+          background: '#FFF4E5',
+          icon: 'medkit',
+          priority: 2,
+        };
+      }
+
       if (item.type === 'medicine_missed') {
         return {
           id: `event-${item.id}`,

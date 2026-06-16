@@ -10,6 +10,7 @@ import {
   Alert,
   Linking,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
@@ -32,6 +33,8 @@ const EmergencyScreen = ({ patientId, onBack, onCancel }) => {
   const [loading, setLoading] = useState(false);
   const [caregiverPhone, setCaregiverPhone] = useState(null);
   const [caregiverName, setCaregiverName] = useState('Familiar');
+  const [patientData, setPatientData] = useState(null);
+  const [medicalInfoVisible, setMedicalInfoVisible] = useState(false);
 
   useEffect(() => {
     const loadCaregiver = async () => {
@@ -44,6 +47,10 @@ const EmergencyScreen = ({ patientId, onBack, onCancel }) => {
         if (!patientSnap.exists()) return;
 
         const patientData = patientSnap.data();
+        setPatientData({
+          id: patientSnap.id,
+          ...patientData,
+        });
         const caregiverIds = Array.isArray(patientData.cuidadores)
           ? patientData.cuidadores
           : [];
@@ -177,6 +184,15 @@ const EmergencyScreen = ({ patientId, onBack, onCancel }) => {
     }
   };
 
+  const getPatientFullName = () => {
+    if (!patientData) return 'No disponible';
+
+    const nombre = patientData.nombre || patientData.name || '';
+    const apellido = patientData.apellido || '';
+
+    return `${nombre} ${apellido}`.trim() || 'No disponible';
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#F2F2F2" />
@@ -215,7 +231,10 @@ const EmergencyScreen = ({ patientId, onBack, onCancel }) => {
           activeOpacity={0.85}
         >
           <View style={styles.buttonContent}>
-            <Text style={styles.buttonEmoji}>📞</Text>
+            <View style={[styles.actionIconBox, styles.greenIconBox]}>
+              <Ionicons name="call-outline" size={38} color="#27AE60" />
+            </View>
+
             <Text style={styles.actionTextDark}>Llamar a{'\n'}familiar</Text>
           </View>
         </TouchableOpacity>
@@ -226,7 +245,9 @@ const EmergencyScreen = ({ patientId, onBack, onCancel }) => {
           activeOpacity={0.85}
         >
           <View style={styles.buttonContent}>
-            <Text style={styles.buttonEmoji}>🚑</Text>
+            <View style={[styles.actionIconBox, styles.redIconBox]}>
+              <Ionicons name="medkit-outline" size={38} color="#E74C3C" />
+            </View>
 
             <Text style={styles.actionTextDark}>
               Llamar{'\n'}SAMU 131
@@ -241,11 +262,13 @@ const EmergencyScreen = ({ patientId, onBack, onCancel }) => {
           disabled={loading}
         >
           <View style={styles.buttonContent}>
-            {loading ? (
-              <ActivityIndicator size="large" color="#000000" />
-            ) : (
-              <Text style={styles.buttonEmoji}>🚨</Text>
-            )}
+            <View style={[styles.actionIconBox, styles.yellowIconBox]}>
+              {loading ? (
+                <ActivityIndicator size="small" color="#F39C12" />
+              ) : (
+                <Ionicons name="notifications-outline" size={38} color="#F39C12" />
+              )}
+            </View>
 
             <Text style={styles.actionTextDark}>
               {loading ? 'Enviando alerta...' : 'Enviar alerta'}
@@ -253,9 +276,25 @@ const EmergencyScreen = ({ patientId, onBack, onCancel }) => {
           </View>
         </TouchableOpacity>
 
+        <TouchableOpacity
+          style={[styles.actionButton, styles.infoButton]}
+          onPress={() => setMedicalInfoVisible(true)}
+          activeOpacity={0.85}
+        >
+          <View style={styles.buttonContent}>
+            <View style={[styles.actionIconBox, styles.blueIconBox]}>
+              <Ionicons name="id-card-outline" size={38} color="#2D9CDB" />
+            </View>
+
+            <Text style={styles.actionTextDark}>
+              Ver información{'\n'}médica
+            </Text>
+          </View>
+        </TouchableOpacity>
+
         {alertSent && (
           <View style={styles.successBox}>
-            <Text style={styles.successIcon}>✅</Text>
+           <Ionicons name="checkmark-circle-outline" size={26} color="#27AE60" />
             <Text style={styles.successText}>
               Tu familiar ha sido notificado
             </Text>
@@ -269,8 +308,48 @@ const EmergencyScreen = ({ patientId, onBack, onCancel }) => {
         >
           <Text style={styles.cancelText}>Cancelar</Text>
         </TouchableOpacity>
+
+        <Modal
+          visible={medicalInfoVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setMedicalInfoVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.medicalCard}>
+              <View style={styles.medicalHeader}>
+                <Ionicons name="medical-outline" size={34} color="#42B65A" />
+                <Text style={styles.medicalTitle}>Carné médico</Text>
+              </View>
+
+              <InfoRow label="Nombre" value={getPatientFullName()} />
+              <InfoRow label="Edad" value={`${patientData?.edad || 'No disponible'}`} />
+              <InfoRow label="Grupo sanguíneo" value={patientData?.grupo || 'No disponible'} />
+              <InfoRow label="Alergias" value={patientData?.alergias || 'Sin alergias registradas'} />
+              <InfoRow label="Teléfono emergencia" value={patientData?.telefono || 'No disponible'} />
+              <InfoRow label="Contacto" value={caregiverName || 'Familiar'} />
+
+              <TouchableOpacity
+                style={styles.closeMedicalButton}
+                onPress={() => setMedicalInfoVisible(false)}
+              >
+                <Text style={styles.closeMedicalText}>Cerrar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
       </ScrollView>
     </SafeAreaView>
+  );
+};
+
+const InfoRow = ({ label, value }) => {
+  return (
+    <View style={styles.infoRow}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue}>{value}</Text>
+    </View>
   );
 };
 

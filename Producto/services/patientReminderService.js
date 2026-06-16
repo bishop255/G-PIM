@@ -22,6 +22,7 @@ export const schedulePatientMedicineReminders = async (patientId) => {
 
   try {
     await Notifications.cancelAllScheduledNotificationsAsync();
+
     const oldIdsRaw = await AsyncStorage.getItem(getStorageKey(patientId));
     const oldIds = oldIdsRaw ? JSON.parse(oldIdsRaw) : [];
 
@@ -58,6 +59,15 @@ export const schedulePatientMedicineReminders = async (patientId) => {
         id: docItem.id,
         ...docItem.data(),
       };
+
+      const currentStock = Number(medicine.currentStock || 0);
+
+      if (currentStock <= 0) {
+        console.log(
+          `No se programan recordatorios para ${medicine.name}: stock 0`
+        );
+        continue;
+      }
 
       if (
         medicine.reminderEnabled &&
@@ -113,7 +123,10 @@ export const schedulePatientMedicineReminders = async (patientId) => {
       JSON.stringify(reminderMap)
     );
 
-    console.log('Recordatorios pendientes programados:', allNotificationIds.length);
+    console.log(
+      'Recordatorios pendientes programados:',
+      allNotificationIds.length
+    );
     console.log('Mapa de recordatorios por dosis:', reminderMap);
   } catch (error) {
     console.error('Error programando recordatorios del paciente:', error);

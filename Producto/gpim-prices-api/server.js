@@ -4,8 +4,15 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const puppeteer = require('puppeteer');
 
+require('dotenv').config();
+const OpenAI = require('openai');
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
@@ -39,7 +46,7 @@ const extractPrice = (text = '') => {
     .map((match) => {
       const raw = match.replace('$', '').trim();
 
-      // Evita decimales raros como $9.33
+      // Evita decimales raros 
       const parts = raw.split('.');
       if (parts.length > 1 && parts.some((part, index) => index > 0 && part.length !== 3)) {
         return null;
@@ -247,6 +254,10 @@ const scrapeSalcobrand = async (query) => {
   try {
     browser = await puppeteer.launch({
       headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+      ],
     });
 
     const page = await browser.newPage();
@@ -389,6 +400,92 @@ app.get('/api/prices', async (req, res) => {
       salcobrand: salcobrand.length,
     },
   });
+});
+
+app.post('/api/medicine-info', async (req, res) => {
+  try {
+    const { medicineName } = req.body;
+
+    if (!medicineName || medicineName.trim().length < 2) {
+      return res.status(400).json({
+        ok: false,
+        message: 'Debes enviar medicineName',
+      });
+    }
+
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({
+        ok: false,
+        message: 'OPENAI_API_KEY no configurada',
+      });
+    }
+
+    const cleanName = medicineName.trim();
+
+    const response = await openai.responses.create({
+      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+      instructions: `
+Eres un asistente informativo para una app de gestión de medicamentos.
+No diagnostiques, no indiques dosis, no reemplaces a un profesional de salud.
+Responde en español claro y breve.
+Devuelve SOLO JSON válido, sin markdown.
+      `,
+      input: `
+Entrega información general sobre el medicamento "${cleanName}".
+
+Formato exacto:
+{
+  "summary": "Explicación breve de para qué sirve.",
+  "uses": ["Uso común 1", "Uso común 2", "Uso común 3"],
+  "precautions": ["Precaución 1", "Precaución 2", "Precaución 3"],
+  "recommendations": ["Recomendación general 1", "Recomendación general 2"],
+  "disclaimer": "Texto corto indicando que no reemplaza indicación médica."
+}
+      `,
+    });
+
+    const rawText = response.output_text || '{}';
+
+    let parsed;
+
+    try {
+      parsed = JSON.parse(rawText);
+    } catch (error) {
+      parsed = {
+        summary: rawText,
+        uses: [],
+        precautions: [],
+        recommendations: [],
+        disclaimer:
+          'Esta información es general y no reemplaza la indicación de un profesional de la salud.',
+      };
+    }
+
+    return res.json({
+      ok: true,
+      medicineName: cleanName,
+      aiInfo: {
+        summary: parsed.summary || '',
+        uses: Array.isArray(parsed.uses) ? parsed.uses : [],
+        precautions: Array.isArray(parsed.precautions) ? parsed.precautions : [],
+        recommendations: Array.isArray(parsed.recommendations)
+          ? parsed.recommendations
+          : [],
+        disclaimer:
+          parsed.disclaimer ||
+          'Esta información es general y no reemplaza la indicación de un profesional de la salud.',
+      },
+    });
+  } catch (error) {
+    console.error('Error IA medicamento:', error);
+    console.error('Detalle OpenAI:', error?.response?.data || error?.message);
+
+    return res.status(500).json({
+      ok: false,
+      message: 'No se pudo generar la información del medicamento.',
+      error: error?.message,
+    });
+  }
 });
 
 app.get('/', (req, res) => {

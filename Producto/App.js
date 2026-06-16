@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Alert } from 'react-native';
+
+
 import { auth, db } from './database/firebaseConfig';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc, addDoc, collection, query, where, onSnapshot ,serverTimestamp } from 'firebase/firestore';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { doc, setDoc, getDoc, collection, query, where, onSnapshot ,serverTimestamp } from 'firebase/firestore';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
+
+
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -17,39 +21,18 @@ import { checkAndNotifyStockAlerts } from './services/stockAlertService';
 
 // Importación de pantallas
 import SplashScreen from './screens/SplashScreen';
-import UserTypeSelectionScreen from './screens/UserTypeSelectionScreen';
 
-import LoginScreen from './screens/Auth/LoginScreen';
-import RegisterScreen from './screens/Auth/RegisterScreen';
 
-import PatientFormScreen from './screens/interfazAdultoMayor/PatientFormScreen';
-import PatientQRScreen from './screens/interfazAdultoMayor/PatientQRScreen';
-import PatientWaitingLinkScreen from './screens/interfazAdultoMayor/PatientWaitingLinkScreen';
+//Importacion de Navegacion
+import { NavigationContainer } from '@react-navigation/native';
+import CaregiverNavigator from './navigation/CaregiverNavigator';
+import AuthNavigator from './navigation/AuthNavigator';
+import PatientNavigator from './navigation/PatientNavigator';
 
-import HomeScreen from './screens/interfazAdultoMayor/HomeScreen';
-import MyMedicinesOffersScreen from './screens/interfazCuidador/MyMedicinesOffersScreen';
-import EmergencyScreen from './screens/interfazAdultoMayor/EmergencyScreen';
-import TakeMedicineScreen from './screens/interfazAdultoMayor/TakeMedicineScreen';
-import PatientLowStockScreen from './screens/interfazAdultoMayor/PatientLowStockScreen';
-
-import LinkPatientScreen from './screens/interfazCuidador/LinkPatientScreen';
-import InventoryScreen from './screens/interfazCuidador/InventoryScreen';
-import AddMedicineScreen from './screens/interfazCuidador/AddMedicineScreen';
-import EditMedicineScreen from './screens/interfazCuidador/EditMedicineScreen';
-import AlertsScreen from './screens/interfazCuidador/AlertsScreen';
-import OffersScreen from './screens/interfazCuidador/OffersScreen';
-import MedicineDetailScreen from './screens/interfazCuidador/MedicineDetailScreen';
-import HistoryScreen from './screens/interfazCuidador/HistoryScreen';
-import SettingsScreen from './screens/interfazCuidador/SettingsScreen';
-import ProfileScreen from './screens/interfazCuidador/ProfileScreen';
-import EditProfileScreen from './screens/interfazCuidador/EditProfileScreen';
-import DashboardScreen from './screens/interfazCuidador/DashboardScreen';
-import EmergencyHistoryScreen from './screens/interfazCuidador/EmergencyHistoryScreen';
 
 
 function MainApp() {
   const [screen, setScreen] = useState('splash');
-  const [selectedMedicine, setSelectedMedicine] = useState(null);
   const [settings, setSettings] = useState({ darkMode: false, largeText: false})
   const [patientId, setPatientId] = useState(null);
   const [adultPatientData, setAdultPatientData] = useState(null);
@@ -205,50 +188,6 @@ useEffect(() => {
   return unsubscribe;
 }, []);
 
-  useEffect(() => {
-    const isAdultPatientFlow =
-      screen === 'adultoMayorHome' ||
-      screen === 'takeMedicine' ||
-      screen === 'adultoMayorEmergency';
-
-    if (!patientId || !isAdultPatientFlow) return;
-
-    const linkQuery = query(
-      collection(db, 'patientLinkRequests'),
-      where('patientId', '==', patientId)
-    );
-
-    const unsubscribe = onSnapshot(linkQuery, async (snapshot) => {
-      const requests = snapshot.docs.map((docItem) => ({
-        id: docItem.id,
-        ...docItem.data(),
-      }));
-
-      const hasActiveLink = requests.some(
-        (item) => item.estado === 'vinculado'
-      );
-
-      const hasUnlinkedRequest = requests.some(
-        (item) => item.estado === 'desvinculado'
-      );
-
-      if (!hasActiveLink && hasUnlinkedRequest) {
-        await AsyncStorage.removeItem('adultPatientId');
-
-        setPatientId(null);
-        setAdultPatientData(null);
-
-        Alert.alert(
-          'Paciente desvinculado',
-          'La conexión con el cuidador fue finalizada.'
-        );
-
-        setScreen('patientWaitingLink');
-      }
-    });
-
-    return unsubscribe;
-  }, [patientId, screen]);
 
 useEffect(() => {
   const isAdultPatientFlow =
@@ -324,7 +263,7 @@ useEffect(() => {
 const handleRegister = async ({ name, email, phone, password, relationship }) => {
   if (!name.trim() || !email.trim() || !phone.trim() || !password.trim()) {
     Alert.alert('Campos incompletos', 'Completa todos los campos.');
-    return;
+    return false;
   }
 
   if (password.length < 6) {
@@ -332,7 +271,7 @@ const handleRegister = async ({ name, email, phone, password, relationship }) =>
       'Contraseña inválida',
       'La contraseña debe tener al menos 6 caracteres.'
     );
-    return;
+    return false;
   }
 
   try {
@@ -357,7 +296,7 @@ const handleRegister = async ({ name, email, phone, password, relationship }) =>
     });
 
     Alert.alert('Cuenta creada', 'Usuario registrado correctamente.');
-    setScreen('patientForm');
+
     return true;
   } catch (error) {
     console.error('Error registrando usuario:', error);
@@ -373,6 +312,7 @@ const handleRegister = async ({ name, email, phone, password, relationship }) =>
     }
 
     Alert.alert('Error', 'No se pudo crear el usuario.');
+    return false;
   }
 };
 
@@ -385,7 +325,6 @@ const handleLogin = async ({ email, password }) => {
   try {
     await signInWithEmailAndPassword(auth, email.trim(), password);
 
-    Alert.alert('Bienvenido', 'Inicio de sesión exitoso.');
     // onAuthStateChanged decidirá si va al inventario o registro de paciente
     return true;
   } catch (error) {
@@ -413,7 +352,6 @@ const handleLogin = async ({ email, password }) => {
 const handleLogout = async () => {
   try {
     await signOut(auth);
-    setSelectedMedicine(null)
     setPatientId(null)
     setScreen('login')
   } catch (error) {
@@ -423,148 +361,119 @@ const handleLogout = async () => {
   
 }
 
-  // Splash
+const handleResetPassword = async (email) => {
+  if (!email.trim()) {
+    Alert.alert(
+      'Correo requerido',
+      'Ingresa tu correo electrónico para recuperar tu contraseña.'
+    );
+    return false;
+  }
+
+  try {
+    await sendPasswordResetEmail(auth, email.trim());
+
+    Alert.alert(
+      'Correo enviado',
+      'Te enviamos un enlace para restablecer tu contraseña. Revisa tu bandeja de entrada o spam.'
+    );
+
+    return true;
+  } catch (error) {
+    console.error('Error enviando recuperación:', error);
+
+    if (error.code === 'auth/invalid-email') {
+      Alert.alert('Correo inválido', 'Ingresa un correo válido.');
+      return false;
+    }
+
+    if (error.code === 'auth/user-not-found') {
+      Alert.alert(
+        'Correo no registrado',
+        'No existe una cuenta asociada a este correo.'
+      );
+      return false;
+    }
+
+    Alert.alert(
+      'Error',
+      'No se pudo enviar el correo de recuperación.'
+    );
+
+    return false;
+  }
+};
+
+  // Splash de carga
+  
   if (screen === 'splash') return <SplashScreen />;
 
-  // Selección
-  if (screen === 'select') {
-    return (
-      <UserTypeSelectionScreen
-        onSelect={(type) => {
-          if (type === 'admin') {
-            setScreen('login'); // Familiar -> login -> Home
-          } else {
-            setScreen('patientWaitingLink'); // Paciente -> QR Vinculación -> Home
-          }
-        }}
-      />
-    );
-  }
 
   //---------- AUTH ----------------
 
-  //Inicio Sesion
-  if (screen === 'login') {
+  if (
+    screen === 'select' ||
+    screen === 'login' ||
+    screen === 'register' ||
+    screen === 'patientForm'
+  ) {
     return (
-      <LoginScreen
-        settings={settings}
-        onBack={() => setScreen('select')}
-        onGoRegister={() => setScreen('register')}
-        onLogin={handleLogin}
-      />
-    )
-  }
-
-  //Registro de Usuario
-  if (screen === 'register') {
-    return (
-      <RegisterScreen
-      settings={settings}
-      onBack={() => setScreen('login')}
-      onGoLogin={() => setScreen('login')}
-      onRegister={handleRegister}
-      />
-    )
-  }
-
-
-  // Formulario paciente
-  if (screen === 'patientForm') {
-    return (
-    <PatientFormScreen
-        onSaved={(newPatientId) => {
-          setPatientId(newPatientId);
-          setScreen('inventory');
-        }}
-        onCancel={() => setScreen('select')}
-      />
+      <NavigationContainer>
+        <AuthNavigator
+          settings={settings}
+          initialRouteName={
+            screen === 'login'
+              ? 'Login'
+              : screen === 'register'
+              ? 'Register'
+              : screen === 'patientForm'
+              ? 'PatientForm'
+              : 'Select'
+          }
+          onLogin={handleLogin}
+          onRegister={handleRegister}
+          onResetPassword={handleResetPassword}
+          onPatientSaved={(newPatientId) => {
+            setPatientId(newPatientId);
+            setScreen('inventory');
+          }}
+          onGoAdultPatient={() => setScreen('patientWaitingLink')}
+        />
+      </NavigationContainer>
     );
   }
 
   //---------- Flujo Paciente ----------------
 
-  if (screen === 'linkPatient') {
-  return (
-    <LinkPatientScreen
-      settings={settings}
-      patientId={patientId}
-      onBack={() => setScreen('inventory')}
-      onLinked={() => {
-        Alert.alert('Vinculación exitosa', 'El paciente ya está conectado.');
-        setScreen('inventory');
-      }}
-    />
-  );
-}
-
-  if (screen === 'patientWaitingLink') {
-  return (
-    <PatientWaitingLinkScreen
-      onBack={() => setScreen('select')}
-      onLinked={async ({ patientId, patientData }) => {
-        await AsyncStorage.setItem('adultPatientId', patientId);
-
-        setPatientId(patientId);
-        setAdultPatientData(patientData);
-
-        await setupNotifications();
-
-        await schedulePatientMedicineReminders(patientId);
-
-        setScreen('adultoMayorHome');
-      }}
-    />
-  );
-}
-
-  if (screen === 'patientQR') {
-  return (
-    <PatientQRScreen
-      patientId={patientId}
-      onBack={() => setScreen('select')}
-    />
-  );
-}
-
-  if (screen === 'adultoMayorHome') {
+  if (
+    screen === 'patientWaitingLink' ||
+    screen === 'adultoMayorHome' ||
+    screen === 'takeMedicine' ||
+    screen === 'patientLowStock' ||
+    screen === 'adultoMayorEmergency'
+  ) {
     return (
-    <HomeScreen
-      patientData={adultPatientData}
-      onBack={() => setScreen('select')}
-      onTakeMedicine={() => setScreen('takeMedicine')}
-      onLowStock={() => setScreen('patientLowStock')}
-      onEmergency={() => setScreen('adultoMayorEmergency')}
-    />
-  );
-}
-
-  if (screen === 'adultoMayorEmergency') {
-    return (
-      <EmergencyScreen
-        patientId={patientId}
-        onBack={() => setScreen('adultoMayorHome')}
-        onCancel={() => setScreen('adultoMayorHome')}
-      />
-    );
-  }
-
-  if (screen === 'takeMedicine') {
-    return (
-      <TakeMedicineScreen
-        patientId={patientId}
-        onBack={() => setScreen('adultoMayorHome')}
-      />
-    );
-}
-
-// Pantalla para reportar al cuidador que un medicamento está por agotarse
-  if (screen === 'patientLowStock') {
-    return (
-      <PatientLowStockScreen
-        patientId={patientId}
-        settings={settings}
-        onBack={() => setScreen('adultoMayorHome')}
-      />
+      <NavigationContainer>
+        <PatientNavigator
+          patientId={patientId}
+          settings={settings}
+          adultPatientData={adultPatientData}
+          setPatientId={setPatientId}
+          setAdultPatientData={setAdultPatientData}
+          initialRouteName={
+            screen === 'adultoMayorHome'
+              ? 'AdultHome'
+              : screen === 'takeMedicine'
+              ? 'TakeMedicine'
+              : screen === 'patientLowStock'
+              ? 'PatientLowStock'
+              : screen === 'adultoMayorEmergency'
+              ? 'Emergency'
+              : 'PatientWaitingLink'
+          }
+          onGoSelect={() => setScreen('select')}
+        />
+      </NavigationContainer>
     );
   }
 
@@ -574,189 +483,16 @@ const handleLogout = async () => {
   // Inventario
   if (screen === 'inventory') {
     return (
-      <InventoryScreen
-        patientId={patientId}
-        settings={settings}
-        onAddPress={() => setScreen('addMedicine')}
-        onEditPress={(medicine) => {
-          setSelectedMedicine(medicine);
-          setScreen('editMedicine');
-        }}
-        onAlertsPress={() => setScreen('alerts')}
-        onOffersPress={() => setScreen('offers')}
-        onMedicinePress={(medicine) => {
-          setSelectedMedicine(medicine);
-          setScreen('medicineDetail');
-        }}
-        onEmergencyHistoryPress={() => setScreen('emergencyHistory')}
-        onHistoryPress={() => setScreen('history')}
-        onSettingsPress={() => setScreen('settings')}
-        onProfilePress={() => setScreen('profile')}
-        onDashboardPress={() => setScreen('dashboard')}
-        onLogout={handleLogout}
-        onLinkPatientPress={() => setScreen('linkPatient')}
-      />
+      <NavigationContainer>
+        <CaregiverNavigator
+          patientId={patientId}
+          settings={settings}
+          onLogout={handleLogout}
+          onUpdateSettings={updateSettings}
+        />
+      </NavigationContainer>
     );
   }
-
-    //Detalles Medicamento
-  if (screen === 'medicineDetail') {
-  return (
-    <MedicineDetailScreen
-      patientId={patientId}
-      settings={settings}
-      medicine={selectedMedicine}
-      onBack={() => setScreen('inventory')}
-      onEdit={() => setScreen('editMedicine')}
-    />
-  );
-}
-
-  // Añadir
-  if (screen === 'addMedicine') {
-    return (
-      <AddMedicineScreen
-        patientId={patientId}
-        settings={settings}
-        onCancel={() => setScreen('inventory')}
-        onSaved={() => setScreen('inventory')}
-      />
-    );
-  }
-
-  // Editar
-  if (screen === 'editMedicine') {
-    return (
-      <EditMedicineScreen
-        patientId={patientId}
-        settings={settings}
-        medicine={selectedMedicine}
-        onCancel={() => setScreen('inventory')}
-        onSaved={() => {
-          setSelectedMedicine(null);
-          setScreen('inventory');
-        }}
-      />
-    );
-  }
-
-  // Dashboard
-  if (screen === 'dashboard') {
-    return (
-      <DashboardScreen
-        patientId={patientId}
-        settings={settings}
-        onBack={() => setScreen('inventory')}
-      />
-    );
-  }
-
-  //----------Menu Navegacion----------------
-
-  // Alertas
-  if (screen === 'alerts') {
-    return (
-      <AlertsScreen
-        patientId={patientId}
-        settings={settings}
-        onBack={() => setScreen('inventory')}
-        onGoInventory={() => setScreen('inventory')}
-        onGoOffers={() => setScreen('offers')}
-        onGoProfile={() => setScreen('profile')}
-      />
-    );
-  }
-
-  // Ofertas
-  // Pantalla principal del comparador de ofertas
-  if (screen === 'offers') {
-    return (
-      <OffersScreen
-        patientId={patientId}
-        settings={settings}
-        onBack={() => setScreen('inventory')}
-        onGoInventory={() => setScreen('inventory')}
-        onGoAlerts={() => setScreen('alerts')}
-        onGoProfile={() => setScreen('profile')}
-        onGoMyMedicines={() => setScreen('myMedicinesOffers')}
-      />
-    );
-  }
-
-  // Pantalla que muestra los medicamentos del paciente con comparador de ofertas
-  if (screen === 'myMedicinesOffers') {
-    return (
-      <MyMedicinesOffersScreen
-        patientId={patientId}
-        settings={settings}
-        onBack={() => setScreen('offers')}
-      />
-    );
-  }
-
-  // Perfil 
-  if (screen === 'profile') {
-    return (
-      <ProfileScreen
-        settings={settings}
-        patientId={patientId}
-        onBack={() => setScreen('inventory')}
-        onLogout={handleLogout}
-        onEditProfile={() => setScreen('editProfile')}
-        onGoInventory={() => setScreen('inventory')}
-        onGoAlerts={() => setScreen('alerts')}
-        onGoOffers={() => setScreen('offers')}
-        onGoProfile={() => setScreen('profile')}
-      />
-    );
-  }
-
-  if (screen === 'editProfile') {
-    return (
-      <EditProfileScreen
-        settings={settings}
-        patientId={patientId}
-        onBack={() => setScreen('profile')}
-        onSaved={() => setScreen('profile')}
-      />
-    );
-  }
-
-  //----------Boton Hamburguesa----------------
-
-  // Historial Movimientos
-  if (screen === 'history') {
-    return (
-      <HistoryScreen
-      patientId={patientId}
-      settings={settings}
-      onBack={() => setScreen('inventory')}
-      />
-    );
-  }
-
-  //Ajuste
-  if (screen === 'settings') {
-    return (
-      <SettingsScreen
-      settings={settings}
-      onBack={() => setScreen('inventory')}
-      onUpdateSettings={updateSettings}
-      />
-    )
-  }
-
-  // Historial Emergencias
-  if (screen === 'emergencyHistory') {
-    return (
-      <EmergencyHistoryScreen
-        patientId={patientId}
-        settings={settings}
-        onBack={() => setScreen('inventory')}
-      />
-    );
-  }
-
 
   return null;
 }

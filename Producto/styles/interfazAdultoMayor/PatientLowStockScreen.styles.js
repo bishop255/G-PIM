@@ -1,72 +1,109 @@
-import {StyleSheet} from 'react-native';
-
+import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 55,
   },
+
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    minHeight: 44,
   },
+
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
   title: {
     fontWeight: '800',
+    textAlign: 'center',
   },
+
   rightSpacer: {
-    width: 24,
+    width: 44,
   },
+
   headerText: {
-    fontWeight: 'bold',
-    marginTop: 20,
+    fontWeight: '900',
+    marginTop: 24,
+    marginBottom: 8,
   },
+
   subtitle: {
-    marginTop: 8,
-    marginBottom: 20,
-    lineHeight: 22,
+    marginTop: 4,
+    marginBottom: 22,
+    lineHeight: 24,
+    fontWeight: '600',
   },
+
   scrollContent: {
-    paddingBottom: 30,
+    paddingBottom: 40,
   },
+
   medicineCard: {
-    borderRadius: 22,
-    paddingVertical: 18,
+    borderRadius: 24,
+    paddingVertical: 20,
     paddingHorizontal: 18,
-    marginBottom: 14,
+    marginBottom: 16,
     borderWidth: 1,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 6,
     elevation: 5,
   },
+
   medicineCardContent: {
     flexDirection: 'row',
     alignItems: 'center',
   },
+
+  iconBox: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    backgroundColor: '#FFF4E5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+
   medicineTextBlock: {
     flex: 1,
-    marginLeft: 14,
     marginRight: 10,
   },
+
   medicineName: {
+    fontWeight: '900',
+  },
+
+  medicineInfo: {
+    marginTop: 6,
+    fontWeight: '700',
+  },
+
+  reportHint: {
+    marginTop: 6,
     fontWeight: '800',
   },
-  medicineInfo: {
-    marginTop: 4,
-    fontWeight: '600',
-  },
+
   centerContent: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 40,
+    marginTop: 70,
   },
+
   loadingText: {
     marginTop: 10,
+    fontWeight: '700',
   },
+
   emptyText: {
     textAlign: 'center',
+    fontWeight: '700',
   },
 });

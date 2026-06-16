@@ -20,6 +20,7 @@ import {
   query,
   where,
   getDocs,
+  addDoc,
   serverTimestamp,
 } from 'firebase/firestore';
 import { sendExpoPushNotification } from '../../services/notificationService';
@@ -38,7 +39,6 @@ const PatientLowStockScreen = ({ patientId, settings, onBack }) => {
   // Notificar a los cuidadores vinculados al paciente
   const notifyCaregivers = async (medicine) => {
     try {
-      // Buscar usuarios cuidadores que estén vinculados a este paciente
       const usersRef = collection(db, 'usuarios');
       const caregiversQuery = query(
         usersRef,
@@ -48,16 +48,26 @@ const PatientLowStockScreen = ({ patientId, settings, onBack }) => {
       const caregiversSnapshot = await getDocs(caregiversQuery);
 
       if (caregiversSnapshot.empty) {
-        console.log('No se encontraron cuidadores vinculados para este paciente.');
+        console.log('No se encontraron cuidadores vinculados.');
         return;
       }
 
       const notifications = caregiversSnapshot.docs.map(async (docItem) => {
+        const caregiverId = docItem.id;
         const userData = docItem.data();
 
-        // Enviar notificación solo si existe token push
+        await addDoc(collection(db, 'usuarios', caregiverId, 'alertas'), {
+          type: 'patient_low_stock',
+          patientId,
+          medicineId: medicine.id,
+          medicineName: medicine.name,
+          message: `El paciente indicó que ${medicine.name} está por agotarse.`,
+          read: false,
+          createdAt: serverTimestamp(),
+        });
+
         if (userData?.expoPushToken) {
-          return sendExpoPushNotification({
+          await sendExpoPushNotification({
             expoPushToken: userData.expoPushToken,
             title: 'Stock crítico reportado',
             body: `El paciente indicó que ${medicine.name} está por agotarse.`,
@@ -69,8 +79,6 @@ const PatientLowStockScreen = ({ patientId, settings, onBack }) => {
             },
           });
         }
-
-        return null;
       });
 
       await Promise.all(notifications);
@@ -115,7 +123,7 @@ const PatientLowStockScreen = ({ patientId, settings, onBack }) => {
 
       {/* Barra superior */}
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={onBack}>
+        <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
 
@@ -183,43 +191,54 @@ const PatientLowStockScreen = ({ patientId, settings, onBack }) => {
                   activeOpacity={0.85}
                   disabled={isProcessing}
                 >
-                  <View style={styles.medicineCardContent}>
+                <View style={styles.medicineCardContent}>
+                  <View style={styles.iconBox}>
                     <MaterialCommunityIcons
                       name="pill"
                       size={34}
                       color="#F39C12"
                     />
-
-                    <View style={styles.medicineTextBlock}>
-                      <Text
-                        style={[
-                          styles.medicineName,
-                          { color: colors.text, fontSize: fontSizes.normal + 2 },
-                        ]}
-                      >
-                        {medicine.name}
-                      </Text>
-
-                      <Text
-                        style={[
-                          styles.medicineInfo,
-                          { color: colors.secondaryText, fontSize: fontSizes.small },
-                        ]}
-                      >
-                        Stock actual: {medicine.currentStock ?? 0} | Stock mínimo: {medicine.minStock ?? 0}
-                      </Text>
-                    </View>
-
-                    {isProcessing ? (
-                      <ActivityIndicator size="small" color={colors.primary} />
-                    ) : (
-                      <Ionicons
-                        name="chevron-forward"
-                        size={24}
-                        color={colors.text}
-                      />
-                    )}
                   </View>
+
+                  <View style={styles.medicineTextBlock}>
+                    <Text
+                      style={[
+                        styles.medicineName,
+                        { color: colors.text, fontSize: fontSizes.normal + 2 },
+                      ]}
+                    >
+                      {medicine.name}
+                    </Text>
+
+                    <Text
+                      style={[
+                        styles.medicineInfo,
+                        { color: colors.secondaryText, fontSize: fontSizes.small },
+                      ]}
+                    >
+                      Stock actual: {medicine.currentStock ?? 0} | Stock mínimo: {medicine.minStock ?? 0}
+                    </Text>
+
+                    <Text
+                      style={[
+                        styles.reportHint,
+                        { color: '#F39C12', fontSize: fontSizes.normal + 2 },
+                      ]}
+                    >
+                      Toca para avisar al cuidador
+                    </Text>
+                  </View>
+
+                  {isProcessing ? (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  ) : (
+                    <Ionicons
+                      name="chevron-forward"
+                      size={24}
+                      color={colors.text}
+                    />
+                  )}
+                </View>
                 </TouchableOpacity>
               );
             })

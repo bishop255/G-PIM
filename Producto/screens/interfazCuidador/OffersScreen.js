@@ -310,7 +310,7 @@ const OffersScreen = ({
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.myMedicinesButton, { backgroundColor: '#2D9CDB' }]}
+          style={[styles.myMedicinesButton, { backgroundColor: '#42B65A' }]}
           onPress={onGoMyMedicines}
           activeOpacity={0.85}
         >
