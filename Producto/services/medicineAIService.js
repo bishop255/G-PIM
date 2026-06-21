@@ -1,4 +1,4 @@
-const API_URL = 'http://192.168.1.100:3001/api/medicine-info';
+const API_URL = 'https://g-pim.onrender.com/api/medicine-info';
 
 export const getMedicineAIInfo = async (medicineName) => {
   const response = await fetch(API_URL, {

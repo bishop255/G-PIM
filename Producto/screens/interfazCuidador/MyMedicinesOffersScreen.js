@@ -17,7 +17,7 @@ import { getTheme } from '../../theme/theme';
 
 import { useInventory } from '../../hook/useInventory';
 
-const API_URL = 'http://192.168.100.10:3001/api/prices';
+const API_URL = 'https://g-pim.onrender.com/api/prices';
 
 const formatPrice = (price) => {
   const value = Number(price || 0);
