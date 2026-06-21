@@ -21,7 +21,7 @@
         "backgroundColor": "#42B65A"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.GPIMApp",
+      "package": "com.gpim.app",
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.CAMERA",
