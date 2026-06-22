@@ -124,7 +124,6 @@ El proyecto está desarrollado bajo el patrón arquitectónico **MVVM (Model-Vie
 * Firebase SDK
 * Expo Notifications
 * Expo Camera
-* Expo Location
 * React Native QRCode SVG
 * React Native Vector Icons
 
