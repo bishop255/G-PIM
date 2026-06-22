@@ -7,7 +7,7 @@
 
 ## Descripción del Proyecto
 
-G-PIM (Gestor Predictivo de Insumos Médicos) es una aplicación móvil multiplataforma desarrollada para apoyar el control y seguimiento de tratamientos médicos en adultos mayores.
+G-PIM (Gestor Predictivo de Insumos Médicos) es una aplicación móvil desarrollada para apoyar el control y seguimiento de tratamientos médicos en adultos mayores.
 
 La solución permite a familiares y cuidadores supervisar en tiempo real el cumplimiento del tratamiento, gestionar inventarios de medicamentos, recibir alertas preventivas de agotamiento, comparar precios en farmacias y acceder a información farmacológica asistida por Inteligencia Artificial.
 
